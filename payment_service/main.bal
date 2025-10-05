@@ -69,6 +69,116 @@ kafka:Producer kafkaProducer = check new (kafkaBootstrapServers);
 }
 service /api/v1/payment on new http:Listener(8084) {
 
+    // Simple health endpoint for uniform checks
+    resource function get health() returns string|error {
+        // Light-touch DB ping to confirm connectivity without projections
+        mongodb:Database database = check mongoClient->getDatabase(databaseName);
+        // Count payments to ensure collection is accessible (no projections)
+        mongodb:Collection collection = check database->getCollection("payments");
+        _ = check collection->countDocuments({});
+        return "Payment Service is running";
+    }
+
+    // Process a payment
+    resource function post payments(PaymentRequest request) returns Payment|error {
+        string paymentId = uuid:createType4AsString();
+        
+        Payment payment = {
+            id: paymentId,
+            ticketId: request.ticketId,
+            passengerId: request.passengerId,
+            amount: request.amount,
+            method: request.method,
+            status: "PENDING",
+            createdAt: time:utcNow()
+        };
+
+        // Save payment to database
+        mongodb:Database database = check mongoClient->getDatabase(databaseName);
+        mongodb:Collection collection = check database->getCollection("payments");
+        
+        _ = check collection->insertOne(payment);
+        
+        log:printInfo("Payment created with ID: " + paymentId);
+        
+        // Simulate payment processing
+        _ = start processPaymentAsync(paymentId, request);
+        
+        return payment;
+    }
+
+    // Get payment by ID
+    resource function get payments/[string paymentId]() returns Payment|error {
+        mongodb:Database database = check mongoClient->getDatabase(databaseName);
+        mongodb:Collection collection = check database->getCollection("payments");
+        
+        map<json> filter = {"id": paymentId};
+        stream<Payment, error?> findStream = check collection->find(filter);
+        
+        record {|Payment value;|}? result = check findStream.next();
+        check findStream.close();
+        
+        if result is () {
+            return error("Payment not found");
+        }
+        
+        return result.value;
+    }
+
+    // Get payments by passenger ID
+    resource function get passengers/[string passengerId]/payments() returns Payment[]|error {
+        mongodb:Database database = check mongoClient->getDatabase(databaseName);
+        mongodb:Collection collection = check database->getCollection("payments");
+        
+        map<json> filter = {"passengerId": passengerId};
+        stream<Payment, error?> findStream = check collection->find(filter);
+        
+        Payment[] payments = [];
+        check from Payment payment in findStream
+            do {
+                payments.push(payment);
+            };
+        check findStream.close();
+        
+        return payments;
+    }
+
+    // Get payment statistics
+    resource function get statistics() returns json|error {
+        mongodb:Database database = check mongoClient->getDatabase(databaseName);
+        mongodb:Collection collection = check database->getCollection("payments");
+        
+        // Count payments by status
+        map<json> pendingFilter = {"status": "PENDING"};
+        int pendingCount = check collection->countDocuments(pendingFilter);
+        
+        map<json> successFilter = {"status": "SUCCESS"};
+        int successCount = check collection->countDocuments(successFilter);
+        
+        map<json> failedFilter = {"status": "FAILED"};
+        int failedCount = check collection->countDocuments(failedFilter);
+        
+        // Calculate total revenue (successful payments only)
+        // Note: Aggregation would be more efficient, but using simple approach for clarity
+        map<json> filter = {"status": "SUCCESS"};
+        stream<Payment, error?> findStream = check collection->find(filter);
+        
+        decimal totalRevenue = 0.0;
+        check from Payment payment in findStream
+            do {
+                totalRevenue += payment.amount;
+            };
+        check findStream.close();
+        
+        return {
+            "total": pendingCount + successCount + failedCount,
+            "pending": pendingCount,
+            "successful": successCount,
+            "failed": failedCount,
+            "totalRevenue": totalRevenue
+        };
+    }
+
     
 
 }
