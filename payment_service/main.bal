@@ -179,8 +179,46 @@ service /api/v1/payment on new http:Listener(8084) {
         };
     }
 
-    
-
+    // Refund a payment
+    resource function post payments/[string paymentId]/refund() returns json|error {
+        mongodb:Database database = check mongoClient->getDatabase(databaseName);
+        mongodb:Collection collection = check database->getCollection("payments");
+        
+        map<json> filter = {"id": paymentId};
+        stream<Payment, error?> findStream = check collection->find(filter);
+        
+        record {|Payment value;|}? result = check findStream.next();
+        check findStream.close();
+        
+        if result is () {
+            return error("Payment not found");
+        }
+        
+        Payment payment = result.value;
+        
+        if (payment.status != "SUCCESS") {
+            return {"success": false, "message": "Cannot refund non-successful payment"};
+        }
+        
+        // Create refund record
+        string refundId = uuid:createType4AsString();
+        Payment refund = {
+            id: refundId,
+            ticketId: payment.ticketId,
+            passengerId: payment.passengerId,
+            amount: -payment.amount, // Negative amount for refund
+            method: payment.method,
+            status: "SUCCESS",
+            createdAt: time:utcNow(),
+            processedAt: time:utcNow(),
+            transactionId: "REFUND-" + payment.id.toString()
+        };
+        
+        _ = check collection->insertOne(refund);
+        
+        log:printInfo("Refund processed for payment: " + paymentId);
+        return {"success": true, "refundId": refundId, "amount": payment.amount};
+    }
 }
 
 // Async function to simulate payment processing
