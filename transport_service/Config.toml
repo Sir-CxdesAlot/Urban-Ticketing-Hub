@@ -1,0 +1,7 @@
+# Transport Service Configuration  
+# Docker environment configuration
+
+mongoHost = "mongodb"
+mongoPort = 27017
+databaseName = "ticketing_platform"
+kafkaBootstrapServers = "kafka:9092"
