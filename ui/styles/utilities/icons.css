@@ -1,0 +1,6 @@
+/* Icon utility */
+.icon, .settings-icon { width: 20px; height: 20px; vertical-align: middle; }
+
+/* Theme-aware icon contrast */
+:root.dark .icon, :root.dark .settings-icon { filter: invert(1) brightness(1.2) contrast(1.1); }
+:root.light .icon, :root.light .settings-icon { filter: none; }

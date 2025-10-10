@@ -1,0 +1,4 @@
+/* Success message */
+.success-message { display:none; background: var(--success-bg); border: 1px solid var(--success-border); color: var(--success-text); border-radius: 12px; padding: 14px; }
+.success-content { display:flex; align-items:center; gap: 10px; }
+.success-icon { font-size: 20px; }

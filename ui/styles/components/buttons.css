@@ -1,0 +1,24 @@
+/* Buttons */
+.form-actions { display: flex; gap: 12px; margin-top: 6px; }
+.btn { border: 1px solid var(--border); background: var(--btn-bg); color: var(--text); padding: 10px 14px; border-radius: 10px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; line-height: 1; font-weight: 600;
+    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .05s ease-in-out;
+}
+.btn .icon { margin-right: 0px; }
+.btn:hover { border-color: var(--hover-border); }
+.btn:focus-visible { outline: 0; box-shadow: 0 0 0 4px var(--ring); }
+.btn:active { transform: translateY(1px); }
+.btn[disabled], .btn:disabled, .btn.is-disabled { opacity: .6; cursor: not-allowed; filter: grayscale(.2); }
+.btn-outline { background: transparent; border-color: var(--border); color: var(--text); }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--text); }
+.btn-icon { padding: 8px; }
+.btn-icon-only { width: 36px; height: 36px; padding: 8px; }
+.btn-sm { padding: 8px 12px; border-radius: 8px; font-size: 14px; }
+.btn-lg { padding: 12px 18px; border-radius: 12px; font-size: 16px; }
+.btn-block { width: 100%; }
+.btn-primary { background: linear-gradient(180deg, var(--primary) 0%, var(--primary-600) 100%); border-color: transparent; }
+.btn-primary:hover { filter: brightness(1.05); }
+.btn-secondary { background: var(--secondary-bg); }
+.btn .btn-spinner { display: none; margin-left: 8px; }
+.btn.loading .btn-text { opacity: .35; }
+.btn.loading .btn-spinner { display: inline-block; animation: spin 1s linear infinite; }

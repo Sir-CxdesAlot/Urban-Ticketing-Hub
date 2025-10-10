@@ -1,0 +1,162 @@
+/**
+ * Route Browser Styles
+ * Styles for passenger route browsing and ticket purchasing
+ */
+
+/* ========================================
+   ROUTE CARDS
+   ======================================== */
+
+.route-card {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    transition: all 0.3s ease;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+}
+
+.route-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-color: var(--primary);
+}
+
+.route-card:active {
+    transform: translateY(-2px);
+}
+
+/* ========================================
+   ROUTE TRIPS MODAL
+   ======================================== */
+
+.modal-large {
+    max-width: 900px;
+    width: 95%;
+}
+
+.trips-list {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+.trips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+/* ========================================
+   TRIP CARDS
+   ======================================== */
+
+.trip-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.trip-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary);
+}
+
+.trip-header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+}
+
+.trip-route {
+    background: var(--hover-bg) !important;
+    border: 1px solid var(--border);
+}
+
+.trip-seats {
+    padding: 8px 0;
+}
+
+.trip-price {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-align: center;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 768px) {
+    .modal-large {
+        max-width: 100%;
+        width: 100%;
+        height: 100%;
+        max-height: 100%;
+        border-radius: 0;
+    }
+
+    .trips-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .route-card {
+        min-height: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .trip-card {
+        padding: 16px;
+    }
+
+    .trip-price {
+        font-size: 1.2rem;
+    }
+}
+
+/* ========================================
+   LOADING & EMPTY STATES
+   ======================================== */
+
+#tripsLoadingState,
+#tripsErrorState,
+#tripsEmptyState {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+#tripsLoadingState .spinner {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 16px;
+    display: block;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+
+.purchase-trip-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.purchase-trip-btn:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.purchase-trip-btn:not(:disabled):active {
+    transform: translateY(0);
+}

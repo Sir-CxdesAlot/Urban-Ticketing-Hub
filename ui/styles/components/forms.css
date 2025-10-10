@@ -1,0 +1,39 @@
+/* Registration & form controls */
+.registration-container {
+    display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 16px;
+}
+.registration-form { background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow);
+}
+.form-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+.form-group { grid-column: span 6; display: grid; gap: 6px; }
+.form-group.full-width { grid-column: 1 / -1; }
+.form-label { font-weight: 600; color: var(--muted); }
+.required { color: var(--warning); }
+.form-input, .form-select, textarea {
+    width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text);
+    outline: none; transition: box-shadow .15s ease, border-color .15s ease;
+}
+.form-input:focus, .form-select:focus, textarea:focus { box-shadow: 0 0 0 4px var(--ring); border-color: var(--focus-border); }
+.form-hint { color: var(--muted); font-size: 12px; }
+.error-message { min-height: 18px; color: var(--danger); font-size: 12px; }
+.error { border-color: rgba(255,93,93,.7) !important; }
+
+/* Improved native select */
+.form-select {
+    -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    /* Icon + right overlay to improve arrow contrast across themes */
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"),
+        linear-gradient(var(--select-right-bg, transparent), var(--select-right-bg, transparent));
+    background-repeat: no-repeat, no-repeat;
+    background-position: right 12px center, right 0 top 0;
+    background-size: 16px 16px, 46px 100%;
+    padding-right: 40px;
+    min-height: 44px;
+    cursor: pointer;
+}
+.form-select:hover { border-color: var(--hover-border); }
+.form-select::-ms-expand { display: none; }
+.form-select:invalid { color: var(--muted); }
+.form-select option[disabled] { color: var(--muted); }

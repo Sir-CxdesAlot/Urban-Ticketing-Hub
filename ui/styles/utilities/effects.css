@@ -1,0 +1,11 @@
+/* Effects and global animations */
+@keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+/* Focus ring helper used by JS */
+.card.ring { outline: 2px solid var(--accent, #5aa2ff); outline-offset: 2px; border-radius: 12px; }
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .btn { transition: none; }
+    .btn:active { transform: none; }
+}

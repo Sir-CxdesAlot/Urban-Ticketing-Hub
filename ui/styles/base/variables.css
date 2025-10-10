@@ -1,0 +1,36 @@
+/* CSS Variables (defaults applied when no theme class is present) */
+:root {
+    --bg: #0b0f14;
+    --panel: #111826;
+    --panel-2: #0f1722;
+    --text: #e6eefc;
+    --muted: #9bb0ce;
+    --primary: #5b8cff;
+    --primary-600: #3f6ef3;
+    --green: #1ad18a;
+    --danger: #ff5d5d;
+    --warning: #ffb020;
+    --border: #20324a;
+    --ring: rgba(91,140,255,0.35);
+    --shadow: 0 10px 30px rgba(0,0,0,.35);
+    --radius: 12px;
+    /* Header control heights */
+    --header-control-h: 40px;
+    
+    /* Alert/Badge Colors - Dark Theme */
+    --success-bg: rgba(26, 209, 138, 0.1);
+    --success-text: #1ad18a;
+    --success-border: rgba(26, 209, 138, 0.3);
+    
+    --danger-bg: rgba(255, 93, 93, 0.1);
+    --danger-text: #ff5d5d;
+    --danger-border: rgba(255, 93, 93, 0.3);
+    
+    --warning-bg: rgba(255, 176, 32, 0.1);
+    --warning-text: #ffb020;
+    --warning-border: rgba(255, 176, 32, 0.3);
+    
+    --info-bg: rgba(91, 140, 255, 0.1);
+    --info-text: #5b8cff;
+    --info-border: rgba(91, 140, 255, 0.3);
+}

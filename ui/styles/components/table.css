@@ -1,0 +1,24 @@
+/* Table */
+.table-wrap { overflow-x: auto; overflow-y: hidden; max-width: 100%; border: 1px solid var(--border); border-radius: 12px; background: linear-gradient(180deg, var(--table-bg-1) 0%, var(--table-bg-2) 100%); -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; min-width: 760px; table-layout: auto; }
+thead th { position: sticky; top: 0; background: var(--thead-bg); color: var(--muted); text-align: left; font-weight: 600; padding: 8px; border-bottom: 1px solid var(--border); white-space: nowrap; overflow-wrap: normal; word-break: normal; }
+tbody td { padding: 8px; border-bottom: 1px solid var(--tbody-border); vertical-align: middle; white-space: nowrap; overflow-wrap: normal; word-break: normal; }
+/* Column sizing and wrapping */
+#summary th:nth-child(1), #summary td:nth-child(1) { width: 48px; white-space: nowrap; }
+#summary th:nth-child(2), #summary td:nth-child(2) { min-width: 120px; white-space: normal; overflow-wrap: anywhere; }
+#summary th:nth-child(3), #summary td:nth-child(3) { min-width: 160px; white-space: normal; overflow-wrap: anywhere; }
+#summary th:nth-child(4), #summary td:nth-child(4) { min-width: 140px; white-space: normal; overflow-wrap: break-word; }
+#summary th:nth-child(5), #summary td:nth-child(5) { width: 52px; text-align: center; white-space: nowrap; }
+#summary th:nth-child(6), #summary td:nth-child(6) { min-width: 180px; white-space: normal; overflow-wrap: break-word; }
+#summary th:nth-child(7), #summary td:nth-child(7) { width: 84px; white-space: nowrap; }
+#summary th:nth-child(8), #summary td:nth-child(8) { width: 88px; white-space: nowrap; }
+/* Compact action buttons in table to save space */
+#summary .btn { padding: 6px; border-radius: 8px; }
+#summary .btn .icon { width: 16px; height: 16px; }
+tbody tr:hover { background: var(--row-hover-bg); }
+
+/* Empty table state */
+tr.empty td { padding: 24px; text-align: center; }
+.table-empty { display: grid; place-items: center; gap: 10px; }
+.table-empty img.empty-gif { max-width: 220px; width: 100%; height: auto; border-radius: 10px; box-shadow: var(--shadow); }
+.table-empty .empty-text { color: var(--muted); }

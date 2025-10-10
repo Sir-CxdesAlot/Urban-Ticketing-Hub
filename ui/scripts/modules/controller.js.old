@@ -1,0 +1,512 @@
+// App controller: events, form handling, search, actions
+(() => {
+  const App = (window.App = window.App || {});
+  const { $, $$, debounce, genId, emailRe, setError } = App.utils;
+  const { loadStudents, upsert, removeById } = App.storage;
+  const { render, applyFilter } = App.render;
+  const { initTheme, toggleTheme } = App.theme;
+
+  function formData(form, students, editingId) {
+    const data = new FormData(form);
+    return {
+      id: editingId || genId(),
+      firstName: String(data.get('firstName') || '').toString().trim(),
+      lastName: String(data.get('lastName') || '').toString().trim(),
+      email: String(data.get('email') || '').toString().trim(),
+      programme: String(data.get('programme') || ''),
+      yearOfStudy: String(data.get('yearOfStudy') || ''),
+      interests: String(data.get('interests') || '').toString().trim(),
+      photoUrl: String(data.get('photoUrl') || '').toString().trim(),
+      registrationDate: editingId
+        ? students.find((s) => s.id === editingId)?.registrationDate || new Date().toISOString()
+        : new Date().toISOString(),
+    };
+  }
+
+  function clearErrors() {
+    ['firstName', 'lastName', 'email', 'programme', 'yearOfStudy', 'photoUrl'].forEach((f) => setError('err-' + f, ''));
+  }
+  function validate(form, students, editingId) {
+    clearErrors();
+    let ok = true;
+    const live = $('#live');
+    const get = (id) => form.querySelector('#' + id);
+    const firstName = get('firstName').value.trim();
+    const lastName = get('lastName').value.trim();
+    const email = get('email').value.trim();
+    const programme = get('programme').value;
+    const yearOfStudy = get('yearOfStudy').value;
+    const photoUrl = get('photoUrl').value.trim();
+
+    if (!firstName) {
+      setError('err-firstName', 'First name is required.');
+      ok = false;
+    }
+    if (!lastName) {
+      setError('err-lastName', 'Last name is required.');
+      ok = false;
+    }
+    if (!email) {
+      setError('err-email', 'Email is required.');
+      ok = false;
+    } else if (!emailRe.test(email)) {
+      setError('err-email', 'Enter a valid email.');
+      ok = false;
+    } else {
+      const dup = students.some((s) => s.email.toLowerCase() === email.toLowerCase() && s.id !== editingId);
+      if (dup) {
+        setError('err-email', 'Email must be unique.');
+        ok = false;
+      }
+    }
+    if (!programme) {
+      setError('err-programme', 'Choose a programme.');
+      ok = false;
+    }
+    if (!yearOfStudy) {
+      setError('err-yearOfStudy', 'Choose a year.');
+      ok = false;
+    }
+    if (photoUrl && !/^https?:\/\//i.test(photoUrl)) {
+      setError('err-photoUrl', 'Provide a valid URL starting with http(s) or leave blank.');
+      ok = false;
+    }
+
+    if (!ok) {
+      if (live) live.textContent = 'Fix errors before submitting.';
+    }
+    return ok;
+  }
+
+  function enhanceSelect(sel) {
+    if (!sel || sel.dataset.enhanced) return;
+    sel.dataset.enhanced = '1';
+    const wrap = document.createElement('div');
+    wrap.className = 'select';
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(sel);
+    sel.classList.add('sr');
+    sel.setAttribute('aria-hidden', 'true');
+    sel.tabIndex = -1;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'select-trigger';
+    btn.setAttribute('aria-haspopup', 'listbox');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.innerHTML = `<span class="select-text"></span>`;
+    const arrow = document.createElement('span');
+    arrow.className = 'select-arrow';
+    arrow.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            `;
+    wrap.appendChild(btn);
+    wrap.appendChild(arrow);
+
+    const list = document.createElement('div');
+    list.className = 'select-list';
+    list.setAttribute('role', 'listbox');
+    list.id = sel.id ? sel.id + '-list' : 'list-' + Math.random().toString(36).slice(2, 8);
+    list.tabIndex = -1;
+    wrap.appendChild(list);
+    btn.setAttribute('aria-controls', list.id);
+
+    function buildOptions() {
+      list.innerHTML = '';
+      Array.from(sel.options).forEach((opt) => {
+        const el = document.createElement('div');
+        el.className = 'select-option';
+        el.setAttribute('role', 'option');
+        el.setAttribute('data-value', opt.value);
+        el.tabIndex = -1;
+        if (opt.disabled) el.setAttribute('aria-disabled', 'true');
+        if (opt.selected) el.setAttribute('aria-selected', 'true');
+        el.textContent = opt.textContent;
+        list.appendChild(el);
+      });
+    }
+
+    function labelFor(value) {
+      const o = Array.from(sel.options).find((o) => o.value === value);
+      return o ? o.textContent : '';
+    }
+
+    function syncFromSelect() {
+      const value = sel.value;
+      const text =
+        labelFor(value) || sel.getAttribute('data-placeholder') || sel.querySelector('option[disabled]')?.textContent || '';
+      const textSpan = btn.querySelector('.select-text');
+      textSpan.textContent = text;
+      if (!value) textSpan.classList.add('select-placeholder');
+      else textSpan.classList.remove('select-placeholder');
+      Array.from(list.querySelectorAll('.select-option')).forEach((el) => {
+        el.setAttribute('aria-selected', el.getAttribute('data-value') === value ? 'true' : 'false');
+      });
+    }
+
+    function setOpen(open) {
+      wrap.classList.toggle('open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) {
+        const current =
+          list.querySelector('.select-option[aria-selected="true"]') || list.querySelector('.select-option');
+        current && current.scrollIntoView({ block: 'nearest' });
+        setTimeout(() => {
+          (current || list).focus();
+        }, 0);
+      }
+    }
+
+    function commitValue(value) {
+      if (sel.value !== value) {
+        sel.value = value;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      syncFromSelect();
+      setOpen(false);
+      btn.focus();
+    }
+
+    btn.addEventListener('click', () => setOpen(!wrap.classList.contains('open')));
+    document.addEventListener('click', (e) => {
+      if (!wrap.contains(e.target)) setOpen(false);
+    });
+    list.addEventListener('click', (e) => {
+      const item = e.target.closest('.select-option');
+      if (!item || item.getAttribute('aria-disabled') === 'true') return;
+      commitValue(item.getAttribute('data-value'));
+    });
+    btn.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        setOpen(true);
+        const opts = Array.from(list.querySelectorAll('.select-option'));
+        const selIdx = opts.findIndex((o) => o.getAttribute('aria-selected') === 'true');
+        const next = e.key === 'ArrowDown' ? selIdx + 1 : selIdx - 1;
+        const idx = (next + opts.length) % opts.length;
+        opts[idx]?.scrollIntoView({ block: 'nearest' });
+      }
+    });
+    list.addEventListener('keydown', (e) => {
+      const opts = Array.from(list.querySelectorAll('.select-option'));
+      const selIdx = opts.findIndex((o) => o.getAttribute('aria-selected') === 'true');
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const next = e.key === 'ArrowDown' ? selIdx + 1 : selIdx - 1;
+        const idx = (next + opts.length) % opts.length;
+        opts[idx]?.focus?.();
+        opts[idx]?.scrollIntoView({ block: 'nearest' });
+        opts.forEach((o) => o.setAttribute('aria-selected', 'false'));
+        opts[idx]?.setAttribute('aria-selected', 'true');
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const cur = list.querySelector('.select-option[aria-selected="true"]');
+        if (cur) commitValue(cur.getAttribute('data-value'));
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setOpen(false);
+        btn.focus();
+      }
+    });
+
+    buildOptions();
+    syncFromSelect();
+    sel.addEventListener('change', syncFromSelect);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM Content Loaded');
+    initTheme();
+    
+    const yearNowEl = document.getElementById('yearNow');
+    if (yearNowEl) yearNowEl.textContent = String(new Date().getFullYear());
+
+    // Search functionality
+    const search = document.getElementById('search');
+    const searchClear = document.getElementById('searchClear');
+    
+    if (search && searchClear) {
+      searchClear.addEventListener('click', () => {
+        search.value = '';
+        search.focus();
+      });
+    }
+
+    // Theme toggle
+    const themeBtn = document.getElementById('themeToggle');
+    console.log('Theme button found:', themeBtn);
+    if (themeBtn) {
+      themeBtn.addEventListener('click', () => {
+        console.log('Theme button clicked!');
+        toggleTheme();
+      });
+    } else {
+      console.error('Theme button not found!');
+    }
+  });
+})();
+
+// OLD STUDENT FORM CODE REMOVED - NOT NEEDED FOR TICKETING PLATFORM
+// The code below is commented out as it references elements that don't exist
+/*
+  document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
+    const yearNowEl = document.getElementById('yearNow');
+    if (yearNowEl) yearNowEl.textContent = String(new Date().getFullYear());
+
+    let students = loadStudents();
+    let editingId = null;
+    render(students);
+
+    const form = document.getElementById('regForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const success = document.getElementById('success');
+    const successText = document.getElementById('successText');
+
+    form.addEventListener('input', (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLElement)) return;
+      const id = t.id;
+      if (id === 'email') {
+        const v = t.value.trim();
+        if (!v) setError('err-email', '');
+        else if (!emailRe.test(v)) setError('err-email', 'Enter a valid email.');
+        else setError('err-email', '');
+      }
+    });
+
+    function resetForm() {
+      form.reset();
+      clearErrors();
+      editingId = null;
+      cancelEditBtn.hidden = true;
+      submitBtn.querySelector('.btn-text').textContent = 'Add Student';
+    }
+
+    form.addEventListener('reset', () => {
+      clearErrors();
+      $('#live').textContent = '';
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (form.hasAttribute('disabled')) {
+        const live = $('#live');
+        if (live) live.textContent = 'Form is currently disabled.';
+        return;
+      }
+      const payload = formData(form, students, editingId);
+      if (!validate(form, students, editingId)) return;
+      students = upsert(students, payload);
+      const q = $('#search').value || '';
+      render(applyFilter(students, q));
+      if (success) {
+        success.style.display = 'block';
+        successText.textContent = editingId
+          ? `Updated ${payload.firstName} ${payload.lastName}.`
+          : `Added ${payload.firstName} ${payload.lastName}.`;
+        setTimeout(() => (success.style.display = 'none'), 1600);
+      }
+      $('#live').textContent = editingId ? 'Student updated.' : 'Student added.';
+      resetForm();
+    });
+
+    cancelEditBtn.addEventListener('click', resetForm);
+
+    enhanceSelect(document.getElementById('programme'));
+    enhanceSelect(document.getElementById('yearOfStudy'));
+
+    form.addEventListener('reset', () => {
+      setTimeout(() => {
+        ['programme', 'yearOfStudy'].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+      }, 0);
+    });
+
+    async function handleAction(e) {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const isEdit = btn.classList.contains('action-edit');
+      const isDelete = btn.classList.contains('action-delete');
+      if (!isEdit && !isDelete) return;
+      const row = e.target.closest('[data-id]');
+      if (!row) return;
+      const id = row.getAttribute('data-id');
+      const s = students.find((x) => x.id === id);
+      if (!s) return;
+      if (isEdit) {
+        editingId = s.id;
+        $('#firstName').value = s.firstName;
+        $('#lastName').value = s.lastName;
+        $('#email').value = s.email;
+        $('#programme').value = s.programme;
+        $('#yearOfStudy').value = s.yearOfStudy;
+        $('#interests').value = s.interests || '';
+        $('#photoUrl').value = s.photoUrl || '';
+        cancelEditBtn.hidden = false;
+        submitBtn.querySelector('.btn-text').textContent = 'Update Student';
+        document.getElementById('regForm').scrollIntoView({ behavior: 'smooth' });
+      } else if (isDelete) {
+        const ok = confirm(`Delete ${s.firstName} ${s.lastName}?`);
+        if (!ok) return;
+        students = App.storage.removeById(students, id);
+        const q = $('#search').value || '';
+        render(applyFilter(students, q));
+        $('#live').textContent = 'Student deleted.';
+        if (editingId === id) resetForm();
+      }
+    }
+    $('#cards').addEventListener('click', handleAction);
+    $('#summary').addEventListener('click', handleAction);
+
+    const search = document.getElementById('search');
+    const searchClear = document.getElementById('searchClear');
+    const searchResults = document.getElementById('searchResults');
+
+    if (search && searchResults) {
+      search.setAttribute('role', 'combobox');
+      search.setAttribute('aria-autocomplete', 'list');
+      search.setAttribute('aria-controls', 'searchResults');
+      search.setAttribute('aria-expanded', 'false');
+    }
+
+    let selIndex = -1;
+    function getActionableItems() {
+      return Array.from(searchResults?.querySelectorAll('.search-item[data-id]') || []);
+    }
+    function updateSelection(newIndex) {
+      const items = getActionableItems();
+      items.forEach((el) => el.setAttribute('aria-selected', 'false'));
+      selIndex = -1;
+      if (!items.length) return;
+      if (newIndex < 0) newIndex = items.length - 1;
+      if (newIndex >= items.length) newIndex = 0;
+      const el = items[newIndex];
+      if (!el) return;
+      el.setAttribute('aria-selected', 'true');
+      selIndex = newIndex;
+      if (el.id) search.setAttribute('aria-activedescendant', el.id);
+      el.scrollIntoView({ block: 'nearest' });
+    }
+    function clearSelection() {
+      getActionableItems().forEach((el) => el.setAttribute('aria-selected', 'false'));
+      selIndex = -1;
+      search.removeAttribute('aria-activedescendant');
+    }
+
+    function renderSearchResults(q) {
+      if (!searchResults) return;
+      q = (q || '').trim();
+      if (!q) {
+        searchResults.innerHTML = '';
+        searchResults.hidden = true;
+        search.setAttribute('aria-expanded', 'false');
+        return;
+      }
+      const list = applyFilter(students, q).slice(0, 8);
+      if (!list.length) {
+        searchResults.innerHTML = '<div class="search-item subtle">No matches</div>';
+        searchResults.hidden = false;
+        search.setAttribute('aria-expanded', 'true');
+        clearSelection();
+        return;
+      }
+      const html = list
+        .map((s) => {
+          const photo = App.utils.safeUrl(s.photoUrl) || App.utils.phSm;
+          const optId = `sr-${App.utils.esc(s.id)}`;
+          return `<div class="search-item" role="option" id="${optId}" data-id="${App.utils.esc(s.id)}" tabindex="0" aria-selected="false">
+                    <img class="avatar" src="${photo}" alt="" />
+                    <div>
+                        <div class="name">${App.utils.esc(s.firstName)} ${App.utils.esc(s.lastName)}</div>
+                        <div class="subtle">${App.utils.esc(s.programme)}</div>
+                    </div>
+                </div>`;
+        })
+        .join('');
+      searchResults.innerHTML = html;
+      searchResults.hidden = false;
+      search.setAttribute('aria-expanded', 'true');
+      App.utils.wireAvatarFallbacks(searchResults);
+      clearSelection();
+    }
+
+    function focusCardById(id) {
+      const card = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+      if (!card) return;
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.classList.add('ring');
+      setTimeout(() => card.classList.remove('ring'), 1000);
+    }
+
+    function onPickResult(id) {
+      searchResults.hidden = true;
+      focusCardById(id);
+    }
+
+    function runSearch() {
+      render(applyFilter(students, search.value || ''));
+      renderSearchResults(search.value || '');
+    }
+    const runSearchDebounced = debounce(runSearch, 120);
+    search.addEventListener('input', runSearchDebounced);
+    search.addEventListener('focus', () => renderSearchResults(search.value || ''));
+    search.addEventListener('blur', () => setTimeout(() => { if (searchResults) searchResults.hidden = true; }, 120));
+    search.addEventListener('keydown', (e) => {
+      if (!searchResults || searchResults.hidden) return;
+      const items = getActionableItems();
+      if (!items.length) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        updateSelection(selIndex + 1);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        updateSelection(selIndex - 1);
+      } else if (e.key === 'Enter') {
+        if (selIndex >= 0) {
+          e.preventDefault();
+          const id = items[selIndex].getAttribute('data-id');
+          if (id) onPickResult(id);
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        searchResults.hidden = true;
+        search.setAttribute('aria-expanded', 'false');
+        clearSelection();
+      }
+    });
+    if (searchResults) {
+      searchResults.addEventListener('click', (e) => {
+        const item = e.target.closest('.search-item');
+        if (!item) return;
+        onPickResult(item.getAttribute('data-id'));
+      });
+      searchResults.addEventListener('keydown', (e) => {
+        const item = e.target.closest('.search-item');
+        if (!item) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onPickResult(item.getAttribute('data-id'));
+        }
+      });
+    }
+
+    searchClear.addEventListener('click', () => {
+      search.value = '';
+      runSearch();
+      search.focus();
+    });
+
+    const themeBtn = document.getElementById('themeToggle');
+    console.log('Theme button found:', themeBtn);
+    if (themeBtn) {
+      themeBtn.addEventListener('click', () => {
+        console.log('Theme button clicked!');
+        toggleTheme();
+      });
+    }
+  });
+})();
