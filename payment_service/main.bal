@@ -107,6 +107,21 @@ service /api/v1/payment on new http:Listener(8084) {
         return payment;
     }
 
+    // List all payments (optional filter by status)
+    resource function get payments(string? status = ()) returns Payment[]|error {
+        mongodb:Database database = check mongoClient->getDatabase(databaseName);
+        mongodb:Collection collection = check database->getCollection("payments");
+
+        map<json> filter = {};
+        if status is string { filter["status"] = status; }
+
+        stream<Payment, error?> findStream = check collection->find(filter);
+        Payment[] items = [];
+        check from Payment p in findStream do { items.push(p); };
+        check findStream.close();
+        return items;
+    }
+
     // Get payment by ID
     resource function get payments/[string paymentId]() returns Payment|error {
         mongodb:Database database = check mongoClient->getDatabase(databaseName);
@@ -123,6 +138,45 @@ service /api/v1/payment on new http:Listener(8084) {
         }
         
         return result.value;
+    }
+
+    // Update a payment by ID (only certain fields are updatable)
+    resource function put payments/[string paymentId](record {| string? status?; string? failureReason?; string? method?; |} updateReq)
+            returns json|error {
+        mongodb:Database database = check mongoClient->getDatabase(databaseName);
+        mongodb:Collection collection = check database->getCollection("payments");
+
+        map<json> updateFields = {};
+        if (updateReq?.status is string) { updateFields["status"] = updateReq?.status; }
+        if (updateReq?.failureReason is string) { updateFields["failureReason"] = updateReq?.failureReason; }
+        if (updateReq?.method is string) { updateFields["method"] = updateReq?.method; }
+
+        if (updateFields.length() == 0) {
+            return error("No fields provided for update");
+        }
+
+        map<json> filter = {"id": paymentId};
+        mongodb:Update update = {"set": updateFields};
+        mongodb:UpdateResult result = check collection->updateOne(filter, update);
+
+        if (result.matchedCount == 0) {
+            return error("Payment not found");
+        }
+
+        return {"success": true, "message": "Payment updated successfully"};
+    }
+
+    // Delete a payment by ID
+    resource function delete payments/[string paymentId]() returns json|error {
+        mongodb:Database database = check mongoClient->getDatabase(databaseName);
+        mongodb:Collection collection = check database->getCollection("payments");
+
+        map<json> filter = {"id": paymentId};
+        mongodb:DeleteResult result = check collection->deleteOne(filter);
+        if (result.deletedCount == 0) {
+            return error("Payment not found");
+        }
+        return {"success": true, "message": "Payment deleted successfully"};
     }
 
     // Get payments by passenger ID
@@ -144,32 +198,37 @@ service /api/v1/payment on new http:Listener(8084) {
     }
 
     // Get payment statistics
-    resource function get statistics() returns json|error {
-        mongodb:Database database = check mongoClient->getDatabase(databaseName);
-        mongodb:Collection collection = check database->getCollection("payments");
-        
-        // Count payments by status
-        map<json> pendingFilter = {"status": "PENDING"};
-        int pendingCount = check collection->countDocuments(pendingFilter);
-        
-        map<json> successFilter = {"status": "SUCCESS"};
-        int successCount = check collection->countDocuments(successFilter);
-        
-        map<json> failedFilter = {"status": "FAILED"};
-        int failedCount = check collection->countDocuments(failedFilter);
-        
-        // Calculate total revenue (successful payments only)
-        // Note: Aggregation would be more efficient, but using simple approach for clarity
-        map<json> filter = {"status": "SUCCESS"};
-        stream<Payment, error?> findStream = check collection->find(filter);
-        
+    resource function get statistics() returns json {
+        int pendingCount = 0;
+        int successCount = 0;
+        int failedCount = 0;
         decimal totalRevenue = 0.0;
-        check from Payment payment in findStream
-            do {
-                totalRevenue += payment.amount;
-            };
-        check findStream.close();
         
+        do {
+            mongodb:Database database = check mongoClient->getDatabase(databaseName);
+            mongodb:Collection collection = check database->getCollection("payments");
+            // Iterate all payments to compute stats
+            stream<map<json>, error?> all = check collection->find({});
+            check from map<json> doc in all do {
+                string status = "";
+                json? s = doc["status"];
+                if s is string { status = s; }
+                if (status == "PENDING") { pendingCount += 1; }
+                else if (status == "SUCCESS") { successCount += 1; }
+                else if (status == "FAILED") { failedCount += 1; }
+
+                if (status == "SUCCESS") {
+                    json? a = doc["amount"];
+                    if a is decimal { totalRevenue += a; }
+                    else if a is float { totalRevenue += <decimal>a; }
+                    else if a is int { totalRevenue += <decimal>a; }
+                }
+            };
+            check all.close();
+        } on fail error e {
+            log:printError("Error computing payment statistics: " + e.message());
+        }
+
         return {
             "total": pendingCount + successCount + failedCount,
             "pending": pendingCount,
@@ -255,7 +314,8 @@ function processPaymentAsync(string paymentId, PaymentRequest request) returns e
         updateData["failureReason"] = failureReason;
     }
     
-    mongodb:Update update = {"$set": updateData};
+    // Use typed operator key 'set' which the connector maps to $set
+    mongodb:Update update = {"set": updateData};
     _ = check collection->updateOne(filter, update);
     
     // Publish payment processed event

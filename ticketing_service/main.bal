@@ -130,6 +130,37 @@ service /api/v1/ticketing on new http:Listener(8083) {
         return result.value;
     }
 
+    // Update ticket by ID (only certain fields allowed)
+    resource function put tickets/[string ticketId](record {| string? status?; decimal? price?; time:Utc? expiresAt?; int? ridesRemaining?; |} updateReq)
+            returns json|error {
+        mongodb:Database database = check mongoClient->getDatabase(databaseName);
+        mongodb:Collection collection = check database->getCollection("tickets");
+
+        map<json> updateFields = {};
+        if (updateReq?.status is string) { updateFields["status"] = updateReq?.status; }
+        if (updateReq?.price is decimal) { updateFields["price"] = updateReq?.price; }
+        if (updateReq?.expiresAt is time:Utc) { updateFields["expiresAt"] = updateReq?.expiresAt; }
+        if (updateReq?.ridesRemaining is int) { updateFields["ridesRemaining"] = updateReq?.ridesRemaining; }
+
+        if (updateFields.length() == 0) { return error("No fields provided for update"); }
+
+        map<json> filter = {"id": ticketId};
+        mongodb:Update update = {"set": updateFields};
+        mongodb:UpdateResult result = check collection->updateOne(filter, update);
+        if (result.matchedCount == 0) { return error("Ticket not found"); }
+        return {"success": true, "message": "Ticket updated successfully"};
+    }
+
+    // Delete ticket by ID
+    resource function delete tickets/[string ticketId]() returns json|error {
+        mongodb:Database database = check mongoClient->getDatabase(databaseName);
+        mongodb:Collection collection = check database->getCollection("tickets");
+        map<json> filter = {"id": ticketId};
+        mongodb:DeleteResult result = check collection->deleteOne(filter);
+        if (result.deletedCount == 0) { return error("Ticket not found"); }
+        return {"success": true, "message": "Ticket deleted successfully"};
+    }
+
     // Get tickets by passenger ID
     resource function get passengers/[string passengerId]/tickets() returns Ticket[]|error {
         mongodb:Database database = check mongoClient->getDatabase(databaseName);
@@ -176,7 +207,8 @@ service /api/v1/ticketing on new http:Listener(8083) {
             decimal timeDiff = time:utcDiffSeconds(<time:Utc>ticket?.expiresAt, currentTime);
             if (timeDiff <= 0.0d) {
                 // Update status to expired
-                mongodb:Update update = {"$set": {"status": "EXPIRED"}};
+                // Use typed operator key 'set' which the connector maps to $set
+                mongodb:Update update = {"set": {"status": "EXPIRED"}};
                 _ = check collection->updateOne(filter, update);
                 return {"success": false, "message": "Ticket has expired"};
             }
@@ -201,7 +233,8 @@ service /api/v1/ticketing on new http:Listener(8083) {
             updateData["ridesRemaining"] = currentRides - 1;
         }
         
-        mongodb:Update update = {"$set": updateData};
+    // Use typed operator key 'set' which the connector maps to $set
+    mongodb:Update update = {"set": updateData};
         _ = check collection->updateOne(filter, update);
         
         // Publish validation event
@@ -326,7 +359,8 @@ service kafka:Service on paymentListener {
             
             map<json> filter = {"id": ticketId};
             string newStatus = status == "SUCCESS" ? "PAID" : "CREATED";
-            mongodb:Update update = {"$set": {"status": newStatus}};
+            // Use typed operator key 'set' which the connector maps to $set
+            mongodb:Update update = {"set": {"status": newStatus}};
             
             _ = check collection->updateOne(filter, update);
             

@@ -35,6 +35,15 @@ type NotificationRequest record {
     json? metadata?;
 };
 
+type NotificationUpdate record {
+    string? recipientId?;
+    string? 'type?;
+    string? title?;
+    string? message?;
+    string? status?;
+    json? metadata?;
+};
+
 // Global variables
 mongodb:Client mongoClient = check new ({
     connection: {
@@ -56,17 +65,23 @@ mongodb:Client mongoClient = check new ({
 }
 service /api/v1/notification on new http:Listener(8085) {
 
-    // Simple health endpoint for uniform checks
-    resource function get health() returns string|error {
+    /// Health check endpoint for the notification service.
+    ///
+    /// + return - String indicating service health or error
+    resource function get health() returns json|error {
         // Light-touch DB ping to confirm connectivity without projections
         mongodb:Database database = check mongoClient->getDatabase(databaseName);
         // Count notifications to ensure collection is accessible (no projections)
         mongodb:Collection collection = check database->getCollection("notifications");
         _ = check collection->countDocuments({});
+        // Return as JSON string so clients using JSON parsers can handle it consistently
         return "Notification Service is running";
     }
 
-    // Send a notification
+    /// Sends a new notification to a recipient.
+    ///
+    /// + request - The notification details to send
+    /// + return - The created notification or error
     resource function post notifications(NotificationRequest request) returns Notification|error {
         string notificationId = uuid:createType4AsString();
         
@@ -95,7 +110,10 @@ service /api/v1/notification on new http:Listener(8085) {
         return notification;
     }
 
-    // Get notifications for a user
+    /// Retrieves all notifications for a specific user, including broadcast notifications.
+    ///
+    /// + userId - The unique identifier of the user
+    /// + return - Array of notifications or error
     resource function get users/[string userId]/notifications() returns Notification[]|error {
         mongodb:Database database = check mongoClient->getDatabase(databaseName);
         mongodb:Collection collection = check database->getCollection("notifications");
@@ -120,13 +138,17 @@ service /api/v1/notification on new http:Listener(8085) {
         return notifications;
     }
 
-    // Mark notification as read
+    /// Marks a notification as read by updating its status.
+    ///
+    /// + notificationId - The unique identifier of the notification to mark as read
+    /// + return - JSON response indicating success or error
     resource function put notifications/[string notificationId]/read() returns json|error {
         mongodb:Database database = check mongoClient->getDatabase(databaseName);
         mongodb:Collection collection = check database->getCollection("notifications");
         
         map<json> filter = {"id": notificationId};
-        mongodb:Update update = {"$set": {"status": "READ"}};
+    // Use typed operator key 'set' which the connector maps to $set
+    mongodb:Update update = {"set": {"status": "READ"}};
         
         mongodb:UpdateResult result = check collection->updateOne(filter, update);
         
@@ -138,7 +160,9 @@ service /api/v1/notification on new http:Listener(8085) {
         return {"success": true, "message": "Notification marked as read"};
     }
 
-    // Get notification statistics
+    /// Retrieves notification statistics including counts by status and type.
+    ///
+    /// + return - JSON object containing notification statistics or error
     resource function get statistics() returns json|error {
         mongodb:Database database = check mongoClient->getDatabase(databaseName);
         mongodb:Collection collection = check database->getCollection("notifications");
@@ -180,7 +204,10 @@ service /api/v1/notification on new http:Listener(8085) {
         };
     }
 
-    // Get notification by ID
+    /// Retrieves a specific notification by its ID.
+    ///
+    /// + notificationId - The unique identifier of the notification
+    /// + return - The notification object or error if not found
     resource function get notifications/[string notificationId]() returns Notification|error {
         mongodb:Database database = check mongoClient->getDatabase(databaseName);
         mongodb:Collection collection = check database->getCollection("notifications");
@@ -196,6 +223,72 @@ service /api/v1/notification on new http:Listener(8085) {
         }
         
         return result.value;
+    }
+
+    /// Updates an existing notification by ID.
+    ///
+    /// + notificationId - The unique identifier of the notification to update
+    /// + updateRequest - The fields to update for the notification
+    /// + return - JSON response indicating success or error
+    resource function put notifications/[string notificationId](NotificationUpdate updateRequest) returns json|error {
+        mongodb:Database database = check mongoClient->getDatabase(databaseName);
+        mongodb:Collection collection = check database->getCollection("notifications");
+        
+        map<json> filter = {"id": notificationId};
+        map<json> updateFields = {};
+        
+        if (updateRequest?.recipientId is string) {
+            updateFields["recipientId"] = updateRequest?.recipientId;
+        }
+        if (updateRequest?.'type is string) {
+            updateFields["type"] = updateRequest?.'type;
+        }
+        if (updateRequest?.title is string) {
+            updateFields["title"] = updateRequest?.title;
+        }
+        if (updateRequest?.message is string) {
+            updateFields["message"] = updateRequest?.message;
+        }
+        if (updateRequest?.status is string) {
+            updateFields["status"] = updateRequest?.status;
+        }
+        if (updateRequest?.metadata is json) {
+            updateFields["metadata"] = updateRequest?.metadata;
+        }
+        
+        if (updateFields.length() == 0) {
+            return error("No fields provided for update");
+        }
+        
+    // Use typed operator key 'set' which the connector maps to $set
+    mongodb:Update update = {"set": updateFields};
+        mongodb:UpdateResult result = check collection->updateOne(filter, update);
+        
+        if (result.matchedCount == 0) {
+            return error("Notification not found");
+        }
+        
+        log:printInfo("Notification updated: " + notificationId);
+        return {"success": true, "message": "Notification updated successfully"};
+    }
+
+    /// Deletes a notification by ID.
+    ///
+    /// + notificationId - The unique identifier of the notification to delete
+    /// + return - JSON response indicating success or error
+    resource function delete notifications/[string notificationId]() returns json|error {
+        mongodb:Database database = check mongoClient->getDatabase(databaseName);
+        mongodb:Collection collection = check database->getCollection("notifications");
+        
+        map<json> filter = {"id": notificationId};
+        mongodb:DeleteResult result = check collection->deleteOne(filter);
+        
+        if (result.deletedCount == 0) {
+            return error("Notification not found");
+        }
+        
+        log:printInfo("Notification deleted: " + notificationId);
+        return {"success": true, "message": "Notification deleted successfully"};
     }
 }
 

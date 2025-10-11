@@ -1,5 +1,6 @@
 import ballerina/http;
 import ballerina/log;
+import ballerina/uuid;
 import ballerina/time;
 import ballerinax/mongodb;
 import ballerinax/kafka;
@@ -42,6 +43,19 @@ public type Route record {|
     string updatedAt?;
 |};
 
+// Input payload for creating a route (no audit fields)
+public type RouteInput record {|
+    string name;
+    string startLocation;
+    string endLocation;
+    string[] intermediateStops;
+    string transportType; // BUS, TRAIN
+    decimal basePrice;
+    boolean? isActive?;
+    string? createdAt?;
+    string? updatedAt?;
+|};
+
 // MongoDB-compatible Route type (includes _id and other potential fields)
 public type RouteDb record {|
     string name;
@@ -67,6 +81,18 @@ public type Trip record {|
     int? delayMinutes?;
     string createdAt;
     string updatedAt?;
+|};
+
+// Input payload for creating a trip (no audit/status fields)
+public type TripCreate record {|
+    string routeId;
+    string departureTime;
+    string arrivalTime;
+    int totalSeats;
+    int? availableSeats?;
+    string? status?;
+    string? createdAt?;
+    string? updatedAt?;
 |};
 
 // MongoDB-compatible Trip type (open record to allow _id and other fields)
@@ -95,18 +121,33 @@ public type ScheduleUpdate record {|
     string? newArrivalTime?;
 |};
 
+// Update payload for trips
+public type TripUpdate record {|
+    int? availableSeats?;
+    int? totalSeats?;
+    string? status?;
+    string? departureTime?;
+    string? arrivalTime?;
+    string? delayReason?;
+    int? delayMinutes?;
+|};
+
 // Service configuration
-listener http:Listener httpListener = new(8081);
+listener http:Listener httpListener = new(8082);
 
 service /api/v1/transport on httpListener {
     
     // Create new route
-    resource function post routes(@http:Payload Route routeData) returns map<json>|http:BadRequest|http:InternalServerError {
+    resource function post routes(@http:Payload RouteInput routeData) returns map<json>|http:BadRequest|http:InternalServerError {
         do {
             mongodb:Database database = check mongoClient->getDatabase(databaseName);
             mongodb:Collection routesCollection = check database->getCollection("routes");
             
             map<json> newRoute = {
+                // Generate a stable unique id to satisfy DB unique indexes
+                "id": uuid:createType4AsString(),
+                // Provide a routeNumber to satisfy DB unique index requirements
+                "routeNumber": "RN-" + uuid:createType4AsString(),
                 "name": routeData.name,
                 "startLocation": routeData.startLocation,
                 "endLocation": routeData.endLocation,
@@ -118,9 +159,54 @@ service /api/v1/transport on httpListener {
                 "updatedAt": time:utcNow().toString()
             };
             
-            check routesCollection->insertOne(newRoute);
-            
+            _ = check routesCollection->insertOne(newRoute);
+
             log:printInfo("New route created: " + routeData.name);
+
+            // Attempt to return the created route including a string _id so clients/tests can consume it
+            // Match using the generated id which is unique
+            map<json>[] pipeline = [
+                {"$match": {"id": newRoute["id"]}},
+                {"$project": {
+                    "_id": {"$toString": "$_id"},
+                    "id": 1,
+                    "routeNumber": 1,
+                    "name": 1,
+                    "startLocation": 1,
+                    "endLocation": 1,
+                    "intermediateStops": 1,
+                    "transportType": 1,
+                    "basePrice": 1,
+                    "isActive": 1,
+                    "createdAt": 1,
+                    "updatedAt": 1
+                }}
+            ];
+
+            // Use aggregate to fetch the created document with _id converted to string
+            stream<record {}, error?> routeStream = check routesCollection->aggregate(pipeline);
+            record {}[] routes = check from record {} r in routeStream select r;
+            check routeStream.close();
+
+            if (routes.length() > 0) {
+                map<anydata> routeMap = routes[0];
+                map<json> jsonRoute = {};
+                foreach var [k, v] in routeMap.entries() {
+                    if v is json {
+                        jsonRoute[k] = v;
+                    } else if v is anydata[] {
+                        json[] jsonArray = from var item in v select <json>item;
+                        jsonRoute[k] = jsonArray;
+                    } else if v is record {} {
+                        jsonRoute[k] = v.toJson();
+                    } else {
+                        jsonRoute[k] = v.toString();
+                    }
+                }
+                return jsonRoute;
+            }
+
+            // Fallback: return the inserted newRoute (without _id) if lookup failed
             return newRoute;
             
         } on fail error e {
@@ -286,9 +372,10 @@ service /api/v1/transport on httpListener {
                 "updatedAt": time:utcNow().toString()
             };
             
+            // Use BSON ObjectId filter
             mongodb:UpdateResult updateResult = check routesCollection->updateOne(
-                {"_id": routeId}, 
-                {"$set": updatedRoute}
+                {"_id": {"$oid": routeId}}, 
+                {"set": updatedRoute}
             );
             
             if updateResult.modifiedCount > 0 {
@@ -308,55 +395,66 @@ service /api/v1/transport on httpListener {
             };
         }
     }
+
+    // Delete route by ID
+    resource function delete routes/[string routeId]() returns json|http:NotFound|http:InternalServerError {
+        do {
+            mongodb:Database database = check mongoClient->getDatabase(databaseName);
+            mongodb:Collection routesCollection = check database->getCollection("routes");
+
+            mongodb:DeleteResult result = check routesCollection->deleteOne({"_id": {"$oid": routeId}});
+            if (result.deletedCount == 0) {
+                return <http:NotFound>{ body: {message: "Route not found"} };
+            }
+            return {"success": true, "message": "Route deleted successfully"};
+        } on fail error e {
+            log:printError("Error deleting route: " + e.message());
+            return <http:InternalServerError>{ body: {message: "Route deletion failed"} };
+        }
+    }
     
     // Get all trips
     resource function get trips(string? status = ()) returns map<json>[]|http:InternalServerError {
         do {
             mongodb:Database database = check mongoClient->getDatabase(databaseName);
             mongodb:Collection tripsCollection = check database->getCollection("trips");
-            
-            map<json> filter = {};
-            if status is string {
-                filter["status"] = status;
-            }
-            
-            stream<TripDb, error?> resultStream = check tripsCollection->find(filter);
+
+            map<json> matchFilter = {};
+            if status is string { matchFilter["status"] = status; }
+            map<json>[] pipeline = [
+                {"$match": matchFilter},
+                {"$project": {
+                    "_id": {"$toString": "$_id"},
+                    "routeId": 1, "departureTime": 1, "arrivalTime": 1,
+                    "availableSeats": 1, "totalSeats": 1, "status": 1
+                }}
+            ];
+
+            stream<record {}, error?> s = check tripsCollection->aggregate(pipeline);
             map<json>[] trips = [];
-            
-            check from TripDb tripDb in resultStream
-                do {
-                    map<json> trip = {
-                        "routeId": tripDb.routeId,
-                        "departureTime": tripDb.departureTime,
-                        "arrivalTime": tripDb.arrivalTime,
-                        "availableSeats": tripDb.availableSeats,
-                        "totalSeats": tripDb.totalSeats,
-                        "status": tripDb.status
-                    };
-                    if tripDb["_id"] is string {
-                        trip["_id"] = <string>tripDb["_id"];
-                    }
-                    trips.push(trip);
-                };
-            
+            check from record {} r in s do {
+                map<anydata> m = r;
+                map<json> j = {};
+                foreach var [k,v] in m.entries() { j[k] = v is json ? v : v.toJson(); }
+                trips.push(j);
+            };
+            check s.close();
             log:printInfo("Retrieved " + trips.length().toString() + " trips");
             return trips;
-            
         } on fail error e {
             log:printError("Error retrieving trips: " + e.message());
-            return <http:InternalServerError>{
-                body: {message: "Failed to retrieve trips"}
-            };
+            return <http:InternalServerError>{ body: {message: "Failed to retrieve trips"} };
         }
     }
     
     // Create new trip
-    resource function post trips(@http:Payload Trip tripData) returns map<json>|http:BadRequest|http:InternalServerError {
+    resource function post trips(@http:Payload TripCreate tripData) returns map<json>|http:BadRequest|http:InternalServerError {
         do {
             mongodb:Database database = check mongoClient->getDatabase(databaseName);
             mongodb:Collection tripsCollection = check database->getCollection("trips");
             
             map<json> newTrip = {
+                "id": uuid:createType4AsString(),
                 "routeId": tripData.routeId,
                 "departureTime": tripData.departureTime,
                 "arrivalTime": tripData.arrivalTime,
@@ -366,10 +464,32 @@ service /api/v1/transport on httpListener {
                 "createdAt": time:utcNow().toString(),
                 "updatedAt": time:utcNow().toString()
             };
-            
-            check tripsCollection->insertOne(newTrip);
-            
+
+            _ = check tripsCollection->insertOne(newTrip);
+
             log:printInfo("New trip created for route: " + tripData.routeId);
+
+            // Return created trip with string _id
+            map<json>[] pipeline = [
+                {"$match": {"id": newTrip["id"]}},
+                {"$project": {"_id": {"$toString": "$_id"}, "routeId": 1, "departureTime": 1, "arrivalTime": 1, "availableSeats": 1, "totalSeats": 1, "status": 1, "createdAt": 1, "updatedAt": 1}}
+            ];
+            stream<record {}, error?> s = check tripsCollection->aggregate(pipeline);
+            record {}[] found = check from record {} r in s select r;
+            check s.close();
+            if (found.length() > 0) {
+                map<anydata> m = found[0];
+                map<json> j = {};
+                foreach var [k, v] in m.entries() {
+                    if (v is json) {
+                        j[k] = v;
+                    } else {
+                        j[k] = v.toString();
+                    }
+                }
+                return j;
+            }
+
             return newTrip;
             
         } on fail error e {
@@ -379,56 +499,91 @@ service /api/v1/transport on httpListener {
             };
         }
     }
+
+    // Get trip by ID
+    resource function get trips/[string tripId]() returns map<json>|http:NotFound|http:InternalServerError {
+        do {
+            mongodb:Database database = check mongoClient->getDatabase(databaseName);
+            mongodb:Collection tripsCollection = check database->getCollection("trips");
+            map<json>? trip = check tripsCollection->findOne({"_id": {"$oid": tripId}});
+            if (trip is map<json>) { return trip; }
+            return <http:NotFound>{ body: {message: "Trip not found"} };
+        } on fail error e {
+            log:printError("Error getting trip: " + e.message());
+            return <http:InternalServerError>{ body: {message: "Trip retrieval failed"} };
+        }
+    }
+
+    // Update trip by ID (general fields)
+    resource function put trips/[string tripId](@http:Payload TripUpdate updateReq) returns json|http:NotFound|http:InternalServerError {
+        do {
+            mongodb:Database database = check mongoClient->getDatabase(databaseName);
+            mongodb:Collection tripsCollection = check database->getCollection("trips");
+            map<json> updateFields = {};
+            if (updateReq?.availableSeats is int) { updateFields["availableSeats"] = updateReq?.availableSeats; }
+            if (updateReq?.totalSeats is int) { updateFields["totalSeats"] = updateReq?.totalSeats; }
+            if (updateReq?.status is string) { updateFields["status"] = updateReq?.status; }
+            if (updateReq?.departureTime is string) { updateFields["departureTime"] = updateReq?.departureTime; }
+            if (updateReq?.arrivalTime is string) { updateFields["arrivalTime"] = updateReq?.arrivalTime; }
+            if (updateReq?.delayReason is string) { updateFields["delayReason"] = updateReq?.delayReason; }
+            if (updateReq?.delayMinutes is int) { updateFields["delayMinutes"] = updateReq?.delayMinutes; }
+            updateFields["updatedAt"] = time:utcNow().toString();
+
+            if (updateFields.length() == 0) { return {"success": true, "message": "No fields to update"}; }
+
+            mongodb:UpdateResult result = check tripsCollection->updateOne({"_id": {"$oid": tripId}}, {"set": updateFields});
+            if (result.matchedCount == 0) { return <http:NotFound>{ body: {message: "Trip not found"} }; }
+            return {"success": true, "message": "Trip updated successfully"};
+        } on fail error e {
+            log:printError("Error updating trip: " + e.message());
+            return <http:InternalServerError>{ body: {message: "Trip update failed"} };
+        }
+    }
+
+    // Delete trip by ID
+    resource function delete trips/[string tripId]() returns json|http:NotFound|http:InternalServerError {
+        do {
+            mongodb:Database database = check mongoClient->getDatabase(databaseName);
+            mongodb:Collection tripsCollection = check database->getCollection("trips");
+            mongodb:DeleteResult result = check tripsCollection->deleteOne({"_id": {"$oid": tripId}});
+            if (result.deletedCount == 0) { return <http:NotFound>{ body: {message: "Trip not found"} }; }
+            return {"success": true, "message": "Trip deleted successfully"};
+        } on fail error e {
+            log:printError("Error deleting trip: " + e.message());
+            return <http:InternalServerError>{ body: {message: "Trip deletion failed"} };
+        }
+    }
     
     // Get trips by route
     resource function get routes/[string routeId]/trips(string? status = ()) returns map<json>[]|http:InternalServerError {
         do {
             mongodb:Database database = check mongoClient->getDatabase(databaseName);
             mongodb:Collection tripsCollection = check database->getCollection("trips");
-            
-            map<json> filter = {"routeId": routeId};
-            if status is string {
-                filter["status"] = status;
-            }
-            
-            // Use typed stream to avoid projection issues, then manually build response
-            stream<TripDb, error?> tripStream = check tripsCollection->find(filter);
-            
-            map<json>[] tripArray = [];
-            check from TripDb trip in tripStream
-                do {
-                    map<json> tripJson = {
-                        "routeId": trip.routeId,
-                        "departureTime": trip.departureTime,
-                        "arrivalTime": trip.arrivalTime,
-                        "availableSeats": trip.availableSeats,
-                        "totalSeats": trip.totalSeats,
-                        "status": trip.status,
-                        "createdAt": trip.createdAt
-                    };
-                    
-                    // Add optional fields
-                    if trip?.delayReason is string {
-                        tripJson["delayReason"] = <string>trip?.delayReason;
-                    }
-                    if trip?.delayMinutes is int {
-                        tripJson["delayMinutes"] = <int>trip?.delayMinutes;
-                    }
-                    if trip?.updatedAt is string {
-                        tripJson["updatedAt"] = trip.updatedAt;
-                    }
-                    
-                    tripArray.push(tripJson);
-                };
-            
-            log:printInfo("Retrieved trips for route: " + routeId + ", count: " + tripArray.length().toString());
-            return tripArray;
-            
+
+            map<json> matchFilter = {"routeId": routeId};
+            if status is string { matchFilter["status"] = status; }
+            map<json>[] pipeline = [
+                {"$match": matchFilter},
+                {"$project": {
+                    "_id": {"$toString": "$_id"},
+                    "routeId": 1, "departureTime": 1, "arrivalTime": 1,
+                    "availableSeats": 1, "totalSeats": 1, "status": 1,
+                    "delayReason": 1, "delayMinutes": 1, "createdAt": 1, "updatedAt": 1
+                }}
+            ];
+            stream<record {}, error?> s = check tripsCollection->aggregate(pipeline);
+            map<json>[] out = [];
+            check from record {} r in s do {
+                map<anydata> m = r; map<json> j = {};
+                foreach var [k,v] in m.entries() { j[k] = v is json ? v : v.toJson(); }
+                out.push(j);
+            };
+            check s.close();
+            log:printInfo("Retrieved trips for route: " + routeId + ", count: " + out.length().toString());
+            return out;
         } on fail error e {
             log:printError("Error getting trips: " + e.message());
-            return <http:InternalServerError>{
-                body: {message: "Trip retrieval failed"}
-            };
+            return <http:InternalServerError>{ body: {message: "Trip retrieval failed"} };
         }
     }
     
@@ -439,7 +594,7 @@ service /api/v1/transport on httpListener {
             mongodb:Collection tripsCollection = check database->getCollection("trips");
             
             // Get existing trip
-            map<json>? existingTrip = check tripsCollection->findOne({"_id": tripId});
+            map<json>? existingTrip = check tripsCollection->findOne({"_id": {"$oid": tripId}});
             
             if existingTrip is map<json> {
                 // Calculate new times if delayed
@@ -475,8 +630,8 @@ service /api/v1/transport on httpListener {
                 }
                 
                 mongodb:UpdateResult updateResult = check tripsCollection->updateOne(
-                    {"_id": tripId},
-                    {"$set": updateData}
+                    {"_id": {"$oid": tripId}},
+                    {"set": updateData}
                 );
                 
                 if updateResult.modifiedCount > 0 {
@@ -528,5 +683,5 @@ service /api/v1/transport on httpListener {
 }
 
 public function main() returns error? {
-    log:printInfo("Transport Service started on port 8081");
+    log:printInfo("Transport Service started on port 8082");
 }
