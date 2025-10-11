@@ -8,12 +8,12 @@ param()
 
 # --- Configuration: API Base URLs ---
 $baseUrls = @{
-    Passenger  = "http://localhost:8081/api/v1/passenger"
-    Transport  = "http://localhost:8082/api/v1/transport"
-    Ticketing  = "http://localhost:8083/api/v1/ticketing"
-    Payment    = "http://localhost:8084/api/v1/payment"
+    Passenger    = "http://localhost:8081/api/v1/passenger"
+    Transport    = "http://localhost:8082/api/v1/transport"
+    Ticketing    = "http://localhost:8083/api/v1/ticketing"
+    Payment      = "http://localhost:8084/api/v1/payment"
     Notification = "http://localhost:8085/api/v1/notification"
-    Admin      = "http://localhost:8086/api/v1/admin"
+    Admin        = "http://localhost:8086/api/v1/admin"
 }
 
 # --- State Management: The magic token keepers ---
@@ -45,14 +45,16 @@ function Invoke-ApiRequest {
             if ($null -ne $Body) { $curlArgs += @('-H', 'Content-Type: application/json', '-d', (if ($Body -is [string]) { $Body } else { $Body | ConvertTo-Json -Depth 5 })) }
             try {
                 $curlOut = & curl.exe @curlArgs
-            } catch {
+            }
+            catch {
                 Write-Host "❌ Curl invocation failed for Admin endpoint: $($_.Exception.Message)" -ForegroundColor Red
                 return $null
             }
             if ($NULL -eq $curlOut -or $curlOut -eq '') { return $null }
             try { return ($curlOut | ConvertFrom-Json) } catch { Write-Host "Non-JSON curl response (Admin):" -ForegroundColor Yellow; Write-Host $curlOut -ForegroundColor DarkYellow; return $curlOut }
         }
-    } catch {}
+    }
+    catch {}
     # Only add Content-Type header when we have a body (some servers mishandle Content-Type on GET requests)
     $headers = @{}
     if (-not [string]::IsNullOrEmpty($Token)) {
@@ -64,9 +66,9 @@ function Invoke-ApiRequest {
     }
 
     $invokeParams = @{
-        Method  = $Method
-        Uri     = $Uri
-        Headers = $headers
+        Method      = $Method
+        Uri         = $Uri
+        Headers     = $headers
         ErrorAction = 'Stop' # throw so we can inspect the response
     }
 
@@ -94,7 +96,8 @@ function Invoke-ApiRequest {
                     $stream = $respObj.GetResponseStream()
                     if ($stream) { $reader = New-Object System.IO.StreamReader($stream); $responseBody = $reader.ReadToEnd(); $reader.Close() }
                 }
-            } catch {
+            }
+            catch {
                 # ignore secondary read errors
             }
 
@@ -107,10 +110,12 @@ function Invoke-ApiRequest {
                     if ($errorDetails.message) { Write-Host "   Detail: $($errorDetails.message)" -ForegroundColor DarkRed }
                     else { Write-Host "   Response Body: $responseBody" -ForegroundColor DarkRed }
                 }
-            } catch {
+            }
+            catch {
                 if ($responseBody) { Write-Host "   Response Body: $responseBody" -ForegroundColor DarkRed }
             }
-        } else {
+        }
+        else {
             # Non-HTTP/Network Error
             Write-Host "❌ Network or Scripting Error: $($_.Exception.Message)" -ForegroundColor Red
         }
@@ -256,14 +261,14 @@ function Login-Passenger {
     
     $result = Invoke-ApiRequest -Method POST -Uri "$($baseUrls.Passenger)/login" -Body $body
     
-    # Fix: Check for common token locations, the init script implies the token is on the top level or within 'data'
+    # Robust token extraction: handle common response shapes (token, accessToken, nested data)
     $token = $null
     if ($result) {
-        if ($result.token) {
-            $token = $result.token
-        } elseif ($result.data -and $result.data.token) {
-            $token = $result.data.token
-        }
+        if ($result.token) { $token = $result.token }
+        elseif ($result.accessToken) { $token = $result.accessToken }
+        elseif ($result.data -and $result.data.token) { $token = $result.data.token }
+        elseif ($result.data -and $result.data.accessToken) { $token = $result.data.accessToken }
+        elseif ($result.data -and $result.data.data -and $result.data.data.token) { $token = $result.data.data.token }
     }
     
     if ($token) {
@@ -271,7 +276,8 @@ function Login-Passenger {
         # Try to get first name from nested user object if available
         $firstName = if ($result.user -and $result.user.firstName) { $result.user.firstName } else { "mate" }
         Write-Host "✅ Login successful! Welcome $firstName." -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "❌ Login failed. Please check your credentials." -ForegroundColor Red
     }
 }
@@ -291,7 +297,8 @@ function Buy-PassengerTicket {
         if ($doLogin -eq '' -or $doLogin.ToLower() -eq 'y') {
             Login-Passenger
             if (-not $script:passengerToken) { Write-Host "Login failed or cancelled." -ForegroundColor Red; return }
-        } else { Write-Host "Purchase cancelled - login required." -ForegroundColor DarkYellow; return }
+        }
+        else { Write-Host "Purchase cancelled - login required." -ForegroundColor DarkYellow; return }
     }
     Write-Header "Buy a New Ticket"
 
@@ -327,9 +334,42 @@ function Buy-PassengerTicket {
         return
     }
 
+
+    # Build purchase payload. The Passenger service expects a TicketPurchase record containing routeId and ticketType
+    # (and optional quantity for MULTIPLE). The trip object often contains a routeId string (like 'r-001') which
+    # should be used where available instead of a Mongo `_id` value from the route document.
+    $routeIdFromTrip = $null
+    try {
+        # Fetch trips and find the selected trip to extract its routeId field
+        $trips = Invoke-ApiRequest -Method GET -Uri "$($baseUrls.Transport)/trips"
+        if ($trips) {
+            # Safely detect id/_id/routeId properties and compare values
+            $found = $trips | Where-Object {
+                $isMatch = $false
+                if ($_.PSObject.Properties.Name -contains 'id') {
+                    if ($_.id -eq $tripId) { $isMatch = $true }
+                }
+                if (-not $isMatch -and $_.PSObject.Properties.Name -contains '_id') {
+                    $prop = $_.PSObject.Properties['_id']
+                    if ($prop -and $prop.Value -eq $tripId) { $isMatch = $true }
+                }
+                if (-not $isMatch -and $_.PSObject.Properties.Name -contains 'routeId') {
+                    if ($_.routeId -eq $routeId) { $isMatch = $true }
+                }
+                $isMatch
+            } | Select-Object -First 1
+            if ($found) {
+                if ($found.PSObject.Properties.Name -contains 'routeId') { $routeIdFromTrip = $found.routeId }
+            }
+        }
+    } catch {
+        # ignore trip-fetch failures; we'll fall back to the selected route id
+    }
+
+    if (-not $routeIdFromTrip) { $routeIdFromTrip = $routeId }
+
     $body = @{ 
-        routeId = $routeId
-        tripId = $tripId # Add tripId to the body
+        routeId    = $routeIdFromTrip
         ticketType = $ticketTypeNorm 
     }
 
@@ -337,8 +377,14 @@ function Buy-PassengerTicket {
     # Sticking to the init script types for robustness
     if ($ticketTypeNorm -eq 'RETURN') {
         Write-Host "Note: Purchasing a RETURN ticket." -ForegroundColor DarkYellow
-    } elseif ($ticketTypeNorm -eq 'MONTHLY_PASS') {
-         Write-Host "Note: Purchasing a MONTHLY_PASS." -ForegroundColor DarkYellow
+    }
+    elseif ($ticketTypeNorm -eq 'MONTHLY_PASS') {
+        Write-Host "Note: Purchasing a MONTHLY_PASS." -ForegroundColor DarkYellow
+    }
+    elseif ($ticketTypeNorm -eq 'MULTIPLE') {
+        $qty = Read-Host "Quantity (integer)"
+        if (-not [int]::TryParse($qty, [ref]$null) -or [int]$qty -lt 1) { Write-Host "❌ Invalid quantity" -ForegroundColor Red; return }
+        $body['quantity'] = [int]$qty
     }
     
     # You might need to adjust the body payload if the ticket microservice expects other fields like 'quantity'
@@ -359,7 +405,8 @@ function View-PassengerTickets {
         if ($doLogin -eq '' -or $doLogin.ToLower() -eq 'y') {
             Login-Passenger
             if (-not $script:passengerToken) { Write-Host "Login failed or cancelled." -ForegroundColor Red; return }
-        } else { Write-Host "Operation cancelled - login required." -ForegroundColor DarkYellow; return }
+        }
+        else { Write-Host "Operation cancelled - login required." -ForegroundColor DarkYellow; return }
     }
     Write-Header "My Tickets"
     $result = Invoke-ApiRequest -Method GET -Uri "$($baseUrls.Passenger)/tickets" -Token $script:passengerToken
@@ -369,7 +416,8 @@ function View-PassengerTickets {
         
         if ($tickets.Count -gt 0) {
             $tickets | Format-Table
-        } else {
+        }
+        else {
             Write-Host "You don't have any tickets, mate. Time to buy one!" -ForegroundColor Yellow
         }
     }
@@ -387,7 +435,8 @@ function Login-Admin {
         $username = 'admin'
         $password = 'Admin123!'
         Write-Host "Using test credentials (username: admin)" -ForegroundColor Yellow
-    } else {
+    }
+    else {
         $username = Read-Host "Enter username"
         $password = Read-Host "Enter password" -AsSecureString | ForEach-Object { [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($_)) }
     }
@@ -400,9 +449,12 @@ function Login-Admin {
     if ($result) {
         if ($result.token) {
             $token = $result.token
-        } elseif ($result.data -and $result.data.token) {
+        }
+        elseif ($result.data -and $result.data.token) {
             $token = $result.data.token
-        } elseif ($result.accessToken) { # Sometimes it's called accessToken
+        }
+        elseif ($result.accessToken) {
+            # Sometimes it's called accessToken
             $token = $result.accessToken
         }
     }
@@ -410,7 +462,8 @@ function Login-Admin {
     if ($token) {
         $script:adminToken = $token
         Write-Host "✅ Admin login successful! Welcome, you've got the keys now." -ForegroundColor Green
-    } else {
+    }
+    else {
         # Some Admin endpoints return success + admin info but no token. Treat that as a successful login for local/test setups.
         if ($result -and ($result.success -eq $true -or $result.adminId -or $result.username)) {
             # Prefer storing adminId if available so subsequent admin calls can identify the session if needed
@@ -418,13 +471,15 @@ function Login-Admin {
             Write-Host "✅ Admin login successful (no token returned). Stored admin identifier for session." -ForegroundColor Green
             Write-Host "--- Raw parsed response from API (for debugging) ---" -ForegroundColor Yellow
             Write-Host ($result | ConvertTo-Json -Depth 5) -ForegroundColor DarkYellow
-        } else {
+        }
+        else {
             Write-Host "❌ Admin login failed. The server wheezed like a cheap kettle trying to process that." -ForegroundColor Red
             # Diagnostic: print raw result if present
             if ($result) {
                 Write-Host "--- Raw parsed response from API (for debugging) ---" -ForegroundColor Yellow
                 Write-Host ($result | ConvertTo-Json -Depth 5) -ForegroundColor DarkYellow
-            } else {
+            }
+            else {
                 Write-Host "--- No parsed response; check raw curl output below (if any) ---" -ForegroundColor Yellow
             }
         }
@@ -574,9 +629,9 @@ function Invoke-ApiRequest {
     }
 
     $invokeParams = @{
-        Method  = $Method
-        Uri     = $Uri
-        Headers = $headers
+        Method      = $Method
+        Uri         = $Uri
+        Headers     = $headers
         ErrorAction = 'Stop' # Changed from SilentlyContinue to Stop for better error catch
         ContentType = 'application/json' # Explicitly set content type
     }
@@ -608,7 +663,8 @@ function Invoke-ApiRequest {
             catch {
                 Write-Host "   Response Body: $responseBody" -ForegroundColor DarkRed
             }
-        } else {
+        }
+        else {
             # Non-HTTP/Network Error
             Write-Host "❌ Network or Scripting Error: $($_.Exception.Message)" -ForegroundColor Red
         }
@@ -759,7 +815,8 @@ function Login-Passenger {
     if ($result) {
         if ($result.token) {
             $token = $result.token
-        } elseif ($result.data -and $result.data.token) {
+        }
+        elseif ($result.data -and $result.data.token) {
             $token = $result.data.token
         }
     }
@@ -769,7 +826,8 @@ function Login-Passenger {
         # Try to get first name from nested user object if available
         $firstName = if ($result.user -and $result.user.firstName) { $result.user.firstName } else { "mate" }
         Write-Host "✅ Login successful! Welcome $firstName." -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "❌ Login failed. Please check your credentials." -ForegroundColor Red
     }
 }
@@ -789,7 +847,8 @@ function Buy-PassengerTicket {
         if ($doLogin -eq '' -or $doLogin.ToLower() -eq 'y') {
             Login-Passenger
             if (-not $script:passengerToken) { Write-Host "Login failed or cancelled." -ForegroundColor Red; return }
-        } else { Write-Host "Purchase cancelled - login required." -ForegroundColor DarkYellow; return }
+        }
+        else { Write-Host "Purchase cancelled - login required." -ForegroundColor DarkYellow; return }
     }
     Write-Header "Buy a New Ticket"
 
@@ -826,8 +885,8 @@ function Buy-PassengerTicket {
     }
 
     $body = @{ 
-        routeId = $routeId
-        tripId = $tripId # Add tripId to the body
+        routeId    = $routeId
+        tripId     = $tripId # Add tripId to the body
         ticketType = $ticketTypeNorm 
     }
 
@@ -835,8 +894,9 @@ function Buy-PassengerTicket {
     # Sticking to the init script types for robustness
     if ($ticketTypeNorm -eq 'RETURN') {
         Write-Host "Note: Purchasing a RETURN ticket." -ForegroundColor DarkYellow
-    } elseif ($ticketTypeNorm -eq 'MONTHLY_PASS') {
-         Write-Host "Note: Purchasing a MONTHLY_PASS." -ForegroundColor DarkYellow
+    }
+    elseif ($ticketTypeNorm -eq 'MONTHLY_PASS') {
+        Write-Host "Note: Purchasing a MONTHLY_PASS." -ForegroundColor DarkYellow
     }
     
     # You might need to adjust the body payload if the ticket microservice expects other fields like 'quantity'
@@ -857,7 +917,8 @@ function View-PassengerTickets {
         if ($doLogin -eq '' -or $doLogin.ToLower() -eq 'y') {
             Login-Passenger
             if (-not $script:passengerToken) { Write-Host "Login failed or cancelled." -ForegroundColor Red; return }
-        } else { Write-Host "Operation cancelled - login required." -ForegroundColor DarkYellow; return }
+        }
+        else { Write-Host "Operation cancelled - login required." -ForegroundColor DarkYellow; return }
     }
     Write-Header "My Tickets"
     $result = Invoke-ApiRequest -Method GET -Uri "$($baseUrls.Passenger)/tickets" -Token $script:passengerToken
@@ -867,7 +928,8 @@ function View-PassengerTickets {
         
         if ($tickets.Count -gt 0) {
             $tickets | Format-Table
-        } else {
+        }
+        else {
             Write-Host "You don't have any tickets, mate. Time to buy one!" -ForegroundColor Yellow
         }
     }
@@ -890,9 +952,12 @@ function Login-Admin {
     if ($result) {
         if ($result.token) {
             $token = $result.token
-        } elseif ($result.data -and $result.data.token) {
+        }
+        elseif ($result.data -and $result.data.token) {
             $token = $result.data.token
-        } elseif ($result.accessToken) { # Sometimes it's called accessToken
+        }
+        elseif ($result.accessToken) {
+            # Sometimes it's called accessToken
             $token = $result.accessToken
         }
     }
@@ -900,7 +965,8 @@ function Login-Admin {
     if ($token) {
         $script:adminToken = $token
         Write-Host "✅ Admin login successful! Welcome, you've got the keys now." -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "❌ Admin login failed. The server wheezed like a cheap kettle trying to process that." -ForegroundColor Red
     }
 }

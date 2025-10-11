@@ -13,19 +13,19 @@ param(
 
 # Configuration
 $script:config = @{
-    AdminUser = @{
+    AdminUser  = @{
         username = "testadmin"
-        email = "testadmin@example.com"
+        email    = "testadmin@example.com"
         password = "TestAdmin123!"
-        role = "SUPER_ADMIN"
+        role     = "SUPER_ADMIN"
     }
     Disruption = @{
-        routeId = "route-001"
-        type = "DELAY"
-        title = "Test Delay"
+        routeId     = "route-001"
+        type        = "DELAY"
+        title       = "Test Delay"
         description = "Testing disruption creation"
-        startTime = "2025-10-11T10:00:00Z"
-        endTime = "2025-10-11T12:00:00Z"
+        startTime   = "2025-10-11T10:00:00Z"
+        endTime     = "2025-10-11T12:00:00Z"
     }
 }
 
@@ -98,7 +98,8 @@ Write-TestStep "Testing health endpoint"
 $healthResult = Invoke-CurlTest -Method GET -Url "$BaseUrl/api/v1/admin/health" -RawResponse
 if ($healthResult -and $healthResult -eq "Admin Service is running") {
     Write-TestSuccess "Health check passed"
-} else {
+}
+else {
     Write-TestError "Health check failed"
     exit 1
 }
@@ -110,16 +111,17 @@ Write-TestHeader "Testing Admin User CRUD Operations"
 Write-TestStep "Creating admin user"
 $createAdminBody = @{
     username = $config.AdminUser.username
-    email = $config.AdminUser.email
+    email    = $config.AdminUser.email
     password = $config.AdminUser.password
-    role = $config.AdminUser.role
+    role     = $config.AdminUser.role
 } | ConvertTo-Json
 
 $createResult = Invoke-CurlTest -Method POST -Url "$BaseUrl/api/v1/admin/admin-users" -Body $createAdminBody
 if ($createResult -and $createResult.success) {
     Write-TestSuccess "Admin user created successfully"
     $adminId = $createResult.adminId
-} else {
+}
+else {
     Write-TestError "Failed to create admin user"
     exit 1
 }
@@ -132,10 +134,12 @@ if ($readResult -and $readResult -is [array] -and $readResult.Count -gt 0) {
     $foundAdmin = $readResult | Where-Object { $_.id -eq $adminId }
     if ($foundAdmin) {
         Write-TestSuccess "Created admin user found in list"
-    } else {
+    }
+    else {
         Write-TestError "Created admin user not found in list"
     }
-} else {
+}
+else {
     Write-TestError "Failed to read admin users"
 }
 
@@ -143,14 +147,15 @@ if ($readResult -and $readResult -is [array] -and $readResult.Count -gt 0) {
 Write-TestStep "Updating admin user"
 $updateAdminBody = @{
     username = "updatedadmin"
-    email = "updatedadmin@example.com"
-    role = "TRANSPORT_ADMIN"
+    email    = "updatedadmin@example.com"
+    role     = "TRANSPORT_ADMIN"
 } | ConvertTo-Json
 
 $updateResult = Invoke-CurlTest -Method PUT -Url "$BaseUrl/api/v1/admin/admin-users/$adminId" -Body $updateAdminBody
 if ($updateResult -and $updateResult.success) {
     Write-TestSuccess "Admin user updated successfully"
-} else {
+}
+else {
     Write-TestError "Failed to update admin user"
 }
 
@@ -159,7 +164,8 @@ Write-TestStep "Deleting admin user"
 $deleteResult = Invoke-CurlTest -Method DELETE -Url "$BaseUrl/api/v1/admin/admin-users/$adminId"
 if ($deleteResult -and $deleteResult.success) {
     Write-TestSuccess "Admin user deleted successfully"
-} else {
+}
+else {
     Write-TestError "Failed to delete admin user"
 }
 
@@ -169,19 +175,20 @@ Write-TestHeader "Testing Service Disruption CRUD Operations"
 # Create Disruption
 Write-TestStep "Creating service disruption"
 $createDisruptionBody = @{
-    routeId = $config.Disruption.routeId
-    type = $config.Disruption.type
-    title = $config.Disruption.title
+    routeId     = $config.Disruption.routeId
+    type        = $config.Disruption.type
+    title       = $config.Disruption.title
     description = $config.Disruption.description
-    startTime = $config.Disruption.startTime
-    endTime = $config.Disruption.endTime
+    startTime   = $config.Disruption.startTime
+    endTime     = $config.Disruption.endTime
 } | ConvertTo-Json
 
 $createDisruptionResult = Invoke-CurlTest -Method POST -Url "$BaseUrl/api/v1/admin/disruptions" -Body $createDisruptionBody
 if ($createDisruptionResult -and $createDisruptionResult.id) {
     Write-TestSuccess "Service disruption created successfully"
     $disruptionId = $createDisruptionResult.id
-} else {
+}
+else {
     Write-TestError "Failed to create service disruption"
     exit 1
 }
@@ -194,25 +201,28 @@ if ($readDisruptionsResult -and $readDisruptionsResult -is [array]) {
     $foundDisruption = $readDisruptionsResult | Where-Object { $_.id -eq $disruptionId }
     if ($foundDisruption) {
         Write-TestSuccess "Created disruption found in list"
-    } else {
+    }
+    else {
         Write-TestError "Created disruption not found in list"
     }
-} else {
+}
+else {
     Write-TestError "Failed to read disruptions"
 }
 
 # Update Disruption
 Write-TestStep "Updating service disruption"
 $updateDisruptionBody = @{
-    title = "Updated Test Delay"
+    title       = "Updated Test Delay"
     description = "Updated testing disruption"
-    status = "RESOLVED"
+    status      = "RESOLVED"
 } | ConvertTo-Json
 
 $updateDisruptionResult = Invoke-CurlTest -Method PUT -Url "$BaseUrl/api/v1/admin/disruptions/$disruptionId" -Body $updateDisruptionBody
 if ($updateDisruptionResult -and $updateDisruptionResult.success) {
     Write-TestSuccess "Service disruption updated successfully"
-} else {
+}
+else {
     Write-TestError "Failed to update service disruption"
 }
 
@@ -225,7 +235,8 @@ $statusUpdateBody = @{
 $statusUpdateResult = Invoke-CurlTest -Method PUT -Url "$BaseUrl/api/v1/admin/disruptions/$disruptionId/status" -Body $statusUpdateBody
 if ($statusUpdateResult -and $statusUpdateResult.success) {
     Write-TestSuccess "Disruption status updated successfully"
-} else {
+}
+else {
     Write-TestError "Failed to update disruption status"
 }
 
@@ -234,7 +245,8 @@ Write-TestStep "Deleting service disruption"
 $deleteDisruptionResult = Invoke-CurlTest -Method DELETE -Url "$BaseUrl/api/v1/admin/disruptions/$disruptionId"
 if ($deleteDisruptionResult -and $deleteDisruptionResult.success) {
     Write-TestSuccess "Service disruption deleted successfully"
-} else {
+}
+else {
     Write-TestError "Failed to delete service disruption"
 }
 
@@ -246,7 +258,8 @@ Write-TestStep "Testing dashboard endpoint"
 $dashboardResult = Invoke-CurlTest -Method GET -Url "$BaseUrl/api/v1/admin/dashboard"
 if ($dashboardResult -and $dashboardResult.systemStatus) {
     Write-TestSuccess "Dashboard retrieved successfully"
-} else {
+}
+else {
     Write-TestError "Failed to retrieve dashboard"
 }
 
@@ -255,7 +268,8 @@ Write-TestStep "Testing usage report endpoint"
 $reportResult = Invoke-CurlTest -Method GET -Url "$BaseUrl/api/v1/admin/reports/usage?period=daily"
 if ($reportResult -and $reportResult.period) {
     Write-TestSuccess "Usage report generated successfully"
-} else {
+}
+else {
     Write-TestError "Failed to generate usage report"
 }
 
@@ -269,7 +283,8 @@ $loginBody = @{
 $loginResult = Invoke-CurlTest -Method POST -Url "$BaseUrl/api/v1/admin/login" -Body $loginBody
 if ($loginResult -and $loginResult.success) {
     Write-TestSuccess "Admin login successful"
-} else {
+}
+else {
     Write-TestError "Admin login failed"
 }
 
