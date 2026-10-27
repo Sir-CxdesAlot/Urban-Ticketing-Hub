@@ -1,0 +1,76 @@
+name: Verify application
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      COMPOSE_PARALLEL_LIMIT: '2'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: {node-version: '24', cache: npm}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with: {python-version: '3.14'}
+      - name: Install verification dependencies
+        run: |
+          npm ci
+          python -m pip install -r requirements-dev.txt
+          npx playwright install --with-deps chromium
+      - name: Validate contract and helper behavior
+        run: |
+          python -m openapi_spec_validator docs/openapi.json
+          python -m unittest discover -s tests -p test_helpers.py -v
+          npm audit --audit-level=high
+      - name: Native business and security tests
+        run: |
+          docker run --rm -u root -v "$PWD:/src" -w /src/database --entrypoint /bin/sh maven:3.9.16-eclipse-temurin-21@sha256:99e61abcff91a9b1333463bd8451fb18495d6eba9250ac66a338b518f8278320 -c 'mvn -B -q package'
+          docker run --rm -u root -v "$PWD:/src" -w /src/core --entrypoint /bin/sh ballerina/ballerina:2201.14.1@sha256:da95f4c1f332ebaa9211d53379521ef4e84dc1b2e5810cbef02391ba3965bb49 -c 'bal test'
+      - name: Build and start demo
+        shell: pwsh
+        run: |
+          ./uth.ps1 setup
+          ./uth.ps1 start
+          $ready=$false
+          foreach($attempt in 1..45) {
+            & pwsh ./uth.ps1 health
+            if($LASTEXITCODE -eq 0) { $ready=$true; break }
+            Start-Sleep -Seconds 2
+          }
+          if(-not $ready) { throw 'Application did not become ready.' }
+          ./uth.ps1 seed
+      - name: Real concurrency, authorization and recovery tests
+        run: python -m unittest discover -s tests -p test_application.py -v
+      - name: Browser workflows and accessibility
+        run: npx playwright test
+      - uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
+        with: {version: 'v0.76.1'}
+      - name: Scan final application and infrastructure images
+        run: |
+          trivy fs --scanners vuln --include-dev-deps --severity HIGH,CRITICAL --exit-code 1 --skip-dirs .tools,.runtime,audits .
+          for image in $(docker compose config --images | sort -u); do
+            trivy image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 "$image"
+          done
+      - name: Verify backup restoration
+        shell: pwsh
+        run: |
+          ./uth.ps1 backup
+          $archive=(Get-ChildItem .runtime/backups/*.archive.gz | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+          ./uth.ps1 restore-check -BackupPath $archive
+      - name: Save browser evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: browser-verification
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+      - name: Stop verification stack
+        if: always()
+        run: docker compose stop

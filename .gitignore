@@ -1,0 +1,16 @@
+# Python helper-regression caches
+__pycache__/
+*.py[cod]
+
+# Generated builds, local credentials, and test output
+.tools/
+.runtime/
+.env
+.env.*
+!.env.example
+**/target/
+**/build/
+node_modules/
+playwright-report/
+test-results/
+*.log

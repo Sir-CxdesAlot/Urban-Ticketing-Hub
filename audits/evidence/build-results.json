@@ -1,0 +1,128 @@
+[
+  {
+    "service": "passenger_service",
+    "runtime": "2201.13.5",
+    "requestedRuntime": "2201.12.10",
+    "sticky": {
+      "command": "bal build --offline --sticky",
+      "passed": false,
+      "log": "builds/passenger_service-build.log",
+      "warnings": 1,
+      "hints": 0
+    },
+    "soft": {
+      "command": "bal build --offline --locking-mode=soft",
+      "passed": true,
+      "log": "builds/passenger_service-soft-build.log",
+      "warnings": 0,
+      "hints": 10,
+      "artifactExists": true,
+      "jarSha256": "8d91b9ebd592e01e5e320647413785284299cd15f41b3c9a4b2a313f305b7e00"
+    }
+  },
+  {
+    "service": "transport_service",
+    "runtime": "2201.13.5",
+    "requestedRuntime": "2201.12.10",
+    "sticky": {
+      "command": "bal build --offline --sticky",
+      "passed": false,
+      "log": "builds/transport_service-build.log",
+      "warnings": 1,
+      "hints": 0
+    },
+    "soft": {
+      "command": "bal build --offline --locking-mode=soft",
+      "passed": true,
+      "log": "builds/transport_service-soft-build.log",
+      "warnings": 1,
+      "hints": 12,
+      "artifactExists": true,
+      "jarSha256": "09eeb28f4b3492a21c4b155fde3d6a52a6272bdc2947e7541499b844647ee78e"
+    }
+  },
+  {
+    "service": "ticketing_service",
+    "runtime": "2201.13.5",
+    "requestedRuntime": "2201.12.10",
+    "sticky": {
+      "command": "bal build --offline --sticky",
+      "passed": false,
+      "log": "builds/ticketing_service-build.log",
+      "warnings": 1,
+      "hints": 0
+    },
+    "soft": {
+      "command": "bal build --offline --locking-mode=soft",
+      "passed": true,
+      "log": "builds/ticketing_service-soft-build.log",
+      "warnings": 1,
+      "hints": 10,
+      "artifactExists": true,
+      "jarSha256": "02e9b7fc1a5ae35cbfb9cd44cbfe5d5e026ce4e8367ae4c7c015b5df918d71c5"
+    }
+  },
+  {
+    "service": "payment_service",
+    "runtime": "2201.13.5",
+    "requestedRuntime": "2201.12.10",
+    "sticky": {
+      "command": "bal build --offline --sticky",
+      "passed": false,
+      "log": "builds/payment_service-build.log",
+      "warnings": 1,
+      "hints": 0
+    },
+    "soft": {
+      "command": "bal build --offline --locking-mode=soft",
+      "passed": true,
+      "log": "builds/payment_service-soft-build.log",
+      "warnings": 1,
+      "hints": 9,
+      "artifactExists": true,
+      "jarSha256": "723dd6bfd86283ed44a98a5a3204e49a35cdfbe1b69ebce34bf5740df97bc139"
+    }
+  },
+  {
+    "service": "notification_service",
+    "runtime": "2201.13.5",
+    "requestedRuntime": "2201.12.10",
+    "sticky": {
+      "command": "bal build --offline --sticky",
+      "passed": false,
+      "log": "builds/notification_service-build.log",
+      "warnings": 1,
+      "hints": 0
+    },
+    "soft": {
+      "command": "bal build --offline --locking-mode=soft",
+      "passed": true,
+      "log": "builds/notification_service-soft-build.log",
+      "warnings": 1,
+      "hints": 14,
+      "artifactExists": true,
+      "jarSha256": "a8a46f9605ddcfa65eb52e27a0b01d94a88ed67d341379fd9ddae96a93bf074d"
+    }
+  },
+  {
+    "service": "admin_service",
+    "runtime": "2201.13.5",
+    "requestedRuntime": "2201.12.10",
+    "sticky": {
+      "command": "bal build --offline --sticky",
+      "passed": false,
+      "log": "builds/admin_service-build.log",
+      "warnings": 1,
+      "hints": 0
+    },
+    "soft": {
+      "command": "bal build --offline --locking-mode=soft",
+      "passed": true,
+      "log": "builds/admin_service-soft-build.log",
+      "warnings": 1,
+      "hints": 14,
+      "artifactExists": true,
+      "jarSha256": "9486194c63adcb2aa68a9527435a7af7efac3f8df6552b9587a37116e3f76d8e"
+    }
+  }
+]

@@ -1,0 +1,18 @@
+[package]
+org = "uth"
+name = "core"
+version = "1.0.0"
+distribution = "2201.14.1"
+
+[build-options]
+observabilityIncluded = false
+sticky = true
+
+[platform.java25]
+graalvmCompatible = false
+
+[[platform.java25.dependency]]
+path = "../database/target/uth-database-1.0.0.jar"
+groupId = "university.uth"
+artifactId = "uth-database"
+version = "1.0.0"

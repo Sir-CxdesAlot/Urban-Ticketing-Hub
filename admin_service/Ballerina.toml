@@ -1,8 +1,15 @@
 [package]
-org = "jaden"
+org = "uth"
 name = "admin_service"
-version = "0.1.0"
-distribution = "2201.12.10"
+version = "1.0.0"
+distribution = "2201.14.1"
 
 [build-options]
-observabilityIncluded = true
+observabilityIncluded = false
+sticky = true
+
+[[dependency]]
+org = "uth"
+name = "core"
+version = "1.0.0"
+repository = "local"

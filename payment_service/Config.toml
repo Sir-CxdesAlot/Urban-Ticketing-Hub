@@ -1,7 +1,1 @@
-# Payment Service Configuration
-# Docker environment configuration
-
-mongoHost = "mongodb"
-mongoPort = 27017
-databaseName = "ticketing_platform"
-kafkaBootstrapServers = "kafka:9092"
+# Deployment settings are supplied with BAL_CONFIG_VAR_* environment variables.

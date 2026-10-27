@@ -1,0 +1,58 @@
+{
+  "routes": [
+    {
+      "name": "Route 101: CBD to Katutura",
+      "startLocation": "Independence Avenue",
+      "endLocation": "Katutura",
+      "intermediateStops": [
+        "Wernhil Park",
+        "Grove Mall",
+        "Katutura Hospital"
+      ],
+      "transportType": "BUS",
+      "baseFareMinor": 850
+    },
+    {
+      "name": "Route 202: Windhoek to Rehoboth",
+      "startLocation": "Windhoek CBD",
+      "endLocation": "Rehoboth",
+      "intermediateStops": [
+        "Brakwater",
+        "Daan Viljoen"
+      ],
+      "transportType": "BUS",
+      "baseFareMinor": 3500
+    },
+    {
+      "name": "Route 303: Windhoek to Okahandja",
+      "startLocation": "Windhoek CBD",
+      "endLocation": "Okahandja",
+      "intermediateStops": [
+        "Hosea Kutako Airport",
+        "Okahandja Park"
+      ],
+      "transportType": "BUS",
+      "baseFareMinor": 4500
+    },
+    {
+      "name": "Route 404: Klein Windhoek Circuit",
+      "startLocation": "Klein Windhoek",
+      "endLocation": "Klein Windhoek",
+      "intermediateStops": [
+        "Robert Mugabe Ave",
+        "Nelson Mandela Ave",
+        "Sam Nujoma Drive"
+      ],
+      "transportType": "BUS",
+      "baseFareMinor": 1000
+    },
+    {
+      "name": "Route 505: Airport Express",
+      "startLocation": "Windhoek CBD",
+      "endLocation": "Hosea Kutako Airport",
+      "intermediateStops": [],
+      "transportType": "SHUTTLE",
+      "baseFareMinor": 12000
+    }
+  ]
+}

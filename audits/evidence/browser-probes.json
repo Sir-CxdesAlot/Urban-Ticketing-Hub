@@ -1,0 +1,173 @@
+{
+  "environment": "Synthetic service responses derived from source contracts; not live backend tests",
+  "requests": [
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/login",
+      "body": "{\"email\":\"audit\",\"password\":\"synthetic\"}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ticketing/purchase",
+      "body": "{\"tripId\":\"123456789012345678901235\",\"passengerId\":\"audit-passenger\",\"quantity\":1,\"paymentMethod\":\"CARD\"}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/transport/routes",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/transport/routes",
+      "body": null
+    }
+  ],
+  "errors": [],
+  "probes": {
+    "initial": {
+      "title": "Passenger Portal - Windhoek Ticketing Platform",
+      "duplicateIds": [],
+      "brokenImages": [],
+      "horizontalOverflow": false,
+      "roles": [
+        "GUEST",
+        "PASSENGER",
+        "ROUTE_OPERATOR",
+        "TRANSPORT_MANAGER",
+        "SUPER_ADMIN"
+      ],
+      "unknownRolePasses": true,
+      "guestCanReadAdmin": false,
+      "apiKeys": [
+        "ROLES",
+        "session",
+        "loadSession",
+        "saveSession",
+        "clearSession",
+        "initGuestMode",
+        "hasPermission",
+        "hasRoleLevel",
+        "hasMinimumRole",
+        "passengerRegister",
+        "passengerLogin",
+        "passengerLogout",
+        "adminLogin",
+        "fetchPassengerProfile",
+        "fetchRoutes",
+        "fetchRouteById",
+        "searchRoutes",
+        "getTransportTypes",
+        "getPopularRoutes",
+        "getRouteSchedule",
+        "fetchTrips",
+        "fetchTripById",
+        "fetchTripsByRoute",
+        "searchTrips",
+        "getUpcomingTrips",
+        "fetchTickets",
+        "fetchAdminSystemStats",
+        "fetchAdminUsers",
+        "fetchAdminRoutes",
+        "fetchAdminServiceHealth",
+        "fetchAdminRevenueAnalytics",
+        "fetchAdminActivityLogs",
+        "displayRoutes",
+        "displayTrips",
+        "viewTripSchedule",
+        "purchaseTicket",
+        "apiRequest"
+      ]
+    },
+    "loginModal": {
+      "role": null,
+      "ariaModal": null,
+      "labelledby": null,
+      "focused": "loginBtn",
+      "open": true
+    },
+    "escapeClosesLogin": false,
+    "adminLogin": {
+      "result": {
+        "success": false,
+        "error": "missing required field username (source contract)"
+      },
+      "loggedIn": false
+    },
+    "purchase": {
+      "success": false,
+      "message": "Resource not found (source contract)"
+    },
+    "passengerUnknownRolePasses": true,
+    "missingApiReferences": {
+      "processPayment": "undefined",
+      "requestRefund": "undefined",
+      "getSession": "undefined"
+    },
+    "mobile": {
+      "width": 390,
+      "scrollWidth": 390,
+      "overflowElements": []
+    },
+    "narrow": {
+      "width": 320,
+      "scrollWidth": 370
+    },
+    "a11y": {
+      "unlabeledInputs": [],
+      "emptyButtons": [],
+      "smallVisibleTargets": []
+    },
+    "tripMarkupInjection": {
+      "inserted": true,
+      "executed": true
+    },
+    "loadedRoutes": "1",
+    "actionCardStyles": {
+      "foreground": "rgb(0, 0, 0)",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    "bannerButtonStyles": {
+      "foreground": "rgb(255, 255, 255)",
+      "background": "rgba(255, 255, 255, 0.2)",
+      "backgroundImage": "none"
+    },
+    "narrowOverflowElements": [
+      {
+        "tag": "DIV",
+        "id": "",
+        "class": "header-right",
+        "width": 189.9375,
+        "right": 369.9375
+      },
+      {
+        "tag": "BUTTON",
+        "id": "themeToggle",
+        "class": "settings-btn",
+        "width": 40,
+        "right": 321.9375
+      },
+      {
+        "tag": "BUTTON",
+        "id": "loginBtn",
+        "class": "settings-btn login-btn",
+        "width": 40,
+        "right": 369.9375
+      },
+      {
+        "tag": "IMG",
+        "id": "",
+        "class": "settings-icon",
+        "width": 20,
+        "right": 359.9375
+      }
+    ],
+    "darkBadgeToken": {
+      "root": "dark",
+      "badgeRulesMatch": false
+    },
+    "storedRouteMarkupInjection": {
+      "inserted": true,
+      "executed": true
+    }
+  }
+}

@@ -1,0 +1,10 @@
+.git
+.tools
+.runtime
+.env*
+**/target
+**/build
+node_modules
+audits
+test-results
+playwright-report

@@ -1,0 +1,223 @@
+{
+  "recordedOn": "2026-10-27",
+  "baselineCommit": "7d56d4e154139f81d8e60a77357a106ac7ee021b",
+  "revision": "repair snapshot on the-ideal-version; verification preceded this commit; baseline commit is historical",
+  "releaseScope": "single-host university demo; simulated payments; in-app notifications",
+  "tests": {
+    "native": {
+      "passed": 10,
+      "failed": 0,
+      "log": ".runtime/final-unit-tests.log"
+    },
+    "helper": {
+      "passed": 8,
+      "failed": 0,
+      "log": ".runtime/final-helper-tests.log",
+      "seconds": 9.292
+    },
+    "apiFullRun": {
+      "passed": 30,
+      "failed": 0,
+      "log": ".runtime/final-api-tests.log",
+      "seconds": 810.259
+    },
+    "freshBootstrap": {
+      "passed": 1,
+      "failed": 0,
+      "log": ".runtime/bootstrap-test.log",
+      "seconds": 46.095
+    },
+    "cliJourneys": {
+      "passed": 1,
+      "failed": 0,
+      "log": ".runtime/final-cli-tests.log",
+      "seconds": 130.27
+    },
+    "queryPlans": {
+      "passed": 1,
+      "failed": 0,
+      "log": ".runtime/final-query-tests.log",
+      "seconds": 56.922
+    },
+    "browserFullRun": {
+      "passed": 9,
+      "failed": 0,
+      "log": ".runtime/final-browser-tests.log"
+    },
+    "offlineLogout": {
+      "passed": 1,
+      "failed": 0,
+      "log": ".runtime/offline-signout-test.log"
+    },
+    "textMotionKeyboard": {
+      "passed": 1,
+      "failed": 0,
+      "log": ".runtime/final-accessibility-test.log"
+    }
+  },
+  "distinctPassingCases": 62,
+  "executionNote": "30-case API and 9-case browser runs plus targeted additions; no single 33/11-case full rerun.",
+  "mockBoundaries": [
+    "all eight helper cases use a loopback fake API",
+    "browser error/HTML/late-response/unknown-role/offline-logout cases inject responses",
+    "session/expiry boundaries edit only their own database fixtures"
+  ],
+  "runtimeImageScans": [
+    {
+      "Image": "uth-demo-v2-admin-service",
+      "ImageId": "sha256:534d02c06b01ee51934bfd4698f3513d8ffc9f516d3f649f844c199152d8e73b",
+      "scanCreatedAt": "2026-10-27T17:52:53.0933653+02:00",
+      "scannerVersion": "0.76.1",
+      "highCriticalCount": 0
+    },
+    {
+      "Image": "uth-demo-v2-gateway:local",
+      "ImageId": "sha256:621baf6fde2589db2f732030f0cb0a8f78ef5ee559aaabe93b92d4823baebb3e",
+      "scanCreatedAt": "2026-10-27T17:52:53.5773028+02:00",
+      "scannerVersion": "0.76.1",
+      "highCriticalCount": 0
+    },
+    {
+      "Image": "uth-demo-v2-kafka:local",
+      "ImageId": "sha256:835d984cbac52b6e037ddca3d96698933ec12b408615eb5e5052ddedb4106a02",
+      "scanCreatedAt": "2026-10-27T17:52:53.9478051+02:00",
+      "scannerVersion": "0.76.1",
+      "highCriticalCount": 0
+    },
+    {
+      "Image": "uth-demo-v2-mongodb:local",
+      "ImageId": "sha256:0204434931525ea8fa5499663f35d3061ed9471a8f73a7cef8223b7d5def87aa",
+      "scanCreatedAt": "2026-10-27T17:52:54.3802201+02:00",
+      "scannerVersion": "0.76.1",
+      "highCriticalCount": 0
+    },
+    {
+      "Image": "uth-demo-v2-notification-service",
+      "ImageId": "sha256:1e460ce7c993e0d2fc4ca067968cea8c7618a7a2828b234dbd0184783f20fac4",
+      "scanCreatedAt": "2026-10-27T17:53:00.5747857+02:00",
+      "scannerVersion": "0.76.1",
+      "highCriticalCount": 0
+    },
+    {
+      "Image": "uth-demo-v2-passenger-service",
+      "ImageId": "sha256:2e9951e030ad17b9e7960de5b38187f5894ad098be11c7cf38cd87ea78599862",
+      "scanCreatedAt": "2026-10-27T17:53:07.1827779+02:00",
+      "scannerVersion": "0.76.1",
+      "highCriticalCount": 0
+    },
+    {
+      "Image": "uth-demo-v2-payment-service",
+      "ImageId": "sha256:475303deea3376555ad8ab2604749d9ae2b4cfe58589d56a506d6af653192cf7",
+      "scanCreatedAt": "2026-10-27T17:53:13.754295+02:00",
+      "scannerVersion": "0.76.1",
+      "highCriticalCount": 0
+    },
+    {
+      "Image": "uth-demo-v2-ticketing-service",
+      "ImageId": "sha256:13edf6edf95d3191f21ee3d865a5a55b0f5d5c3fdeb9d0dad2d97c9fc242b70c",
+      "scanCreatedAt": "2026-10-27T17:53:19.544858+02:00",
+      "scannerVersion": "0.76.1",
+      "highCriticalCount": 0
+    },
+    {
+      "Image": "uth-demo-v2-transport-service",
+      "ImageId": "sha256:a0527ebb403368bbf81e7796087a2044da909c2c2154186c18425c00a311d9b3",
+      "scanCreatedAt": "2026-10-27T17:53:26.4436906+02:00",
+      "scannerVersion": "0.76.1",
+      "highCriticalCount": 0
+    }
+  ],
+  "severityThreshold": [
+    "HIGH",
+    "CRITICAL"
+  ],
+  "advisorySuppressions": [],
+  "sourceDependencyScan": {
+    "scannerVersion": "0.76.1",
+    "createdAt": "2026-10-27T18:20:39.4726151+02:00",
+    "highCriticalCount": 0,
+    "includeDevDependencies": true,
+    "targets": [
+      "database/pom.xml",
+      "package-lock.json"
+    ]
+  },
+  "packagedLocks": [
+    {
+      "service": "passenger",
+      "serviceLockMatches": true,
+      "coreLockMatches": true
+    },
+    {
+      "service": "transport",
+      "serviceLockMatches": true,
+      "coreLockMatches": true
+    },
+    {
+      "service": "ticketing",
+      "serviceLockMatches": true,
+      "coreLockMatches": true
+    },
+    {
+      "service": "payment",
+      "serviceLockMatches": true,
+      "coreLockMatches": true
+    },
+    {
+      "service": "notification",
+      "serviceLockMatches": true,
+      "coreLockMatches": true
+    },
+    {
+      "service": "admin",
+      "serviceLockMatches": true,
+      "coreLockMatches": true
+    }
+  ],
+  "packagedKafkaClientVersion": "3.9.2",
+  "queryPlan": {
+    "temporaryRoutes": 2000,
+    "documentsExamined": 1,
+    "documentsReturned": 1,
+    "indexNames": [
+      "active_1_searchEnd_1",
+      "active_1_searchName_1",
+      "active_1_searchStart_1"
+    ],
+    "duplicateIdRejected": true,
+    "fixtureCleanupAsserted": true
+  },
+  "restoration": {
+    "isolated": true,
+    "oplogReplay": true,
+    "accountsAtSnapshot": 19,
+    "bookingsAtSnapshot": 43,
+    "liveDatabaseReplaced": false,
+    "log": ".runtime/final-restore.log"
+  },
+  "readiness": {
+    "healthyContainers": 9,
+    "smokeChecksPassed": 8
+  },
+  "findings": {
+    "total": 50,
+    "verifiedLocally": 46,
+    "demoBoundaries": [
+      "SEC-06",
+      "OPS-05",
+      "OPS-07"
+    ],
+    "localGatesRemoteCIUnverified": [
+      "QA-01"
+    ]
+  },
+  "unverified": [
+    "hosted GitHub Actions execution",
+    "full manual WCAG/screen-reader/browser matrix and native toolbar zoom",
+    "production load/soak, multi-host availability, Internet TLS/MFA",
+    "real payments and external delivery"
+  ],
+  "verificationPerformedBeforeCommit": true,
+  "branch": "the-ideal-version",
+  "pushed": false
+}

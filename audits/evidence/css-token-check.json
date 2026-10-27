@@ -1,0 +1,206 @@
+{
+  "files": 25,
+  "definedTokens": 52,
+  "unresolvedWithoutFallback": [
+    {
+      "file": "ui/styles/components/cards.css",
+      "line": 112,
+      "undefinedToken": "--success"
+    },
+    {
+      "file": "ui/styles/components/cards.css",
+      "line": 120,
+      "undefinedToken": "--error"
+    },
+    {
+      "file": "ui/styles/components/header.css",
+      "line": 115,
+      "undefinedToken": "--text-primary"
+    },
+    {
+      "file": "ui/styles/components/header.css",
+      "line": 121,
+      "undefinedToken": "--text-secondary"
+    },
+    {
+      "file": "ui/styles/components/menu.css",
+      "line": 31,
+      "undefinedToken": "--text-secondary"
+    },
+    {
+      "file": "ui/styles/components/menu.css",
+      "line": 151,
+      "undefinedToken": "--text-secondary"
+    },
+    {
+      "file": "ui/styles/components/menu.css",
+      "line": 191,
+      "undefinedToken": "--text-secondary"
+    },
+    {
+      "file": "ui/styles/components/menu.css",
+      "line": 272,
+      "undefinedToken": "--text-secondary"
+    },
+    {
+      "file": "ui/styles/components/route-browser.css",
+      "line": 75,
+      "undefinedToken": "--hover-bg"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 10,
+      "undefinedToken": "--color-surface"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 11,
+      "undefinedToken": "--color-border"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 34,
+      "undefinedToken": "--color-border"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 35,
+      "undefinedToken": "--color-background"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 43,
+      "undefinedToken": "--color-text-secondary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 53,
+      "undefinedToken": "--color-border-light"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 61,
+      "undefinedToken": "--color-text-secondary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 83,
+      "undefinedToken": "--color-hover"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 84,
+      "undefinedToken": "--color-primary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 88,
+      "undefinedToken": "--color-primary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 100,
+      "undefinedToken": "--color-background"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 113,
+      "undefinedToken": "--color-text-primary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 122,
+      "undefinedToken": "--color-text-secondary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 134,
+      "undefinedToken": "--color-text-tertiary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 168,
+      "undefinedToken": "--color-primary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 173,
+      "undefinedToken": "--color-text-tertiary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 189,
+      "undefinedToken": "--color-text-primary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 205,
+      "undefinedToken": "--color-border"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 206,
+      "undefinedToken": "--color-primary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 218,
+      "undefinedToken": "--color-text-secondary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 228,
+      "undefinedToken": "--color-text-secondary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 259,
+      "undefinedToken": "--color-text-primary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 265,
+      "undefinedToken": "--color-text-secondary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 270,
+      "undefinedToken": "--color-background"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 280,
+      "undefinedToken": "--color-text-primary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 292,
+      "undefinedToken": "--color-text-secondary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 302,
+      "undefinedToken": "--color-primary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 332,
+      "undefinedToken": "--color-background"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 337,
+      "undefinedToken": "--color-border"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 342,
+      "undefinedToken": "--color-text-tertiary"
+    },
+    {
+      "file": "ui/styles/components/search-results.css",
+      "line": 390,
+      "undefinedToken": "--color-primary"
+    }
+  ]
+}

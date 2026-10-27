@@ -1,0 +1,360 @@
+{
+  "counts": {
+    "Critical": 4,
+    "High": 25,
+    "Medium": 19,
+    "Low": 2
+  },
+  "findings": [
+    {
+      "id": "SEC-01",
+      "severity": "Critical",
+      "uiPriority": null,
+      "title": "authentication and authorization are absent from five services",
+      "report": "01-SECURITY.md"
+    },
+    {
+      "id": "SEC-02",
+      "severity": "Critical",
+      "uiPriority": null,
+      "title": "a passenger can mark a ticket paid and change its quantity",
+      "report": "01-SECURITY.md"
+    },
+    {
+      "id": "SEC-03",
+      "severity": "Critical",
+      "uiPriority": null,
+      "title": "caller-supplied payment value and ticket identity are trusted",
+      "report": "01-SECURITY.md"
+    },
+    {
+      "id": "SEC-04",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "passwords use plaintext or unsalted SHA-256",
+      "report": "01-SECURITY.md"
+    },
+    {
+      "id": "SEC-05",
+      "severity": "Critical",
+      "uiPriority": null,
+      "title": "a committed signing key permits passenger-token forgery",
+      "report": "01-SECURITY.md"
+    },
+    {
+      "id": "SEC-06",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "infrastructure is published without authentication or transport security",
+      "report": "01-SECURITY.md"
+    },
+    {
+      "id": "SEC-07",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "server-side abuse limits and domain validation are missing",
+      "report": "01-SECURITY.md"
+    },
+    {
+      "id": "SEC-08",
+      "severity": "Medium",
+      "uiPriority": null,
+      "title": "sensitive data is logged and audit attribution is unreliable",
+      "report": "01-SECURITY.md"
+    },
+    {
+      "id": "SEC-09",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "stored and DOM HTML injection executes in browser renderers",
+      "report": "01-SECURITY.md"
+    },
+    {
+      "id": "SEC-10",
+      "severity": "Medium",
+      "uiPriority": null,
+      "title": "token lifecycle and account deletion are incomplete",
+      "report": "01-SECURITY.md"
+    },
+    {
+      "id": "DATA-01",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "two incompatible ticket models share one collection",
+      "report": "02-DATA-AND-BUSINESS-LOGIC.md"
+    },
+    {
+      "id": "DATA-02",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "fresh MongoDB seeding violates its unique indexes",
+      "report": "02-DATA-AND-BUSINESS-LOGIC.md"
+    },
+    {
+      "id": "DATA-03",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "the ticket payment consumer uses the wrong Kafka address",
+      "report": "02-DATA-AND-BUSINESS-LOGIC.md"
+    },
+    {
+      "id": "DATA-04",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "timestamp representations break reads and reporting",
+      "report": "02-DATA-AND-BUSINESS-LOGIC.md"
+    },
+    {
+      "id": "DATA-05",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "validation cannot consume a multi-ride ticket correctly and is non-atomic",
+      "report": "02-DATA-AND-BUSINESS-LOGIC.md"
+    },
+    {
+      "id": "DATA-06",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "refunds can repeat without limit and do not revoke tickets",
+      "report": "02-DATA-AND-BUSINESS-LOGIC.md"
+    },
+    {
+      "id": "DATA-07",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "financial/background work and event publication are not durable",
+      "report": "02-DATA-AND-BUSINESS-LOGIC.md"
+    },
+    {
+      "id": "DATA-08",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "schedule event variants violate the consumer contract",
+      "report": "02-DATA-AND-BUSINESS-LOGIC.md"
+    },
+    {
+      "id": "DATA-09",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "selling tickets never reserves transport capacity",
+      "report": "02-DATA-AND-BUSINESS-LOGIC.md"
+    },
+    {
+      "id": "DATA-10",
+      "severity": "Medium",
+      "uiPriority": null,
+      "title": "trip delays replace times with non-time text",
+      "report": "02-DATA-AND-BUSINESS-LOGIC.md"
+    },
+    {
+      "id": "DATA-11",
+      "severity": "Medium",
+      "uiPriority": null,
+      "title": "shared broadcast notifications have shared read state",
+      "report": "02-DATA-AND-BUSINESS-LOGIC.md"
+    },
+    {
+      "id": "DATA-12",
+      "severity": "Medium",
+      "uiPriority": null,
+      "title": "unbounded queries and mismatched indexes impede scaling",
+      "report": "02-DATA-AND-BUSINESS-LOGIC.md"
+    },
+    {
+      "id": "UI-01",
+      "severity": "High",
+      "uiPriority": "P0",
+      "title": "first load never fetches passenger routes",
+      "report": "03-FRONTEND.md"
+    },
+    {
+      "id": "UI-02",
+      "severity": "High",
+      "uiPriority": "P0",
+      "title": "browser API routes and payloads do not match services",
+      "report": "03-FRONTEND.md"
+    },
+    {
+      "id": "UI-03",
+      "severity": "High",
+      "uiPriority": "P1",
+      "title": "global search discards valid route and trip results",
+      "report": "03-FRONTEND.md"
+    },
+    {
+      "id": "UI-04",
+      "severity": "High",
+      "uiPriority": "P1",
+      "title": "unknown role checks fail open and navigation bypasses its own gates",
+      "report": "03-FRONTEND.md"
+    },
+    {
+      "id": "UI-05",
+      "severity": "Medium",
+      "uiPriority": "P1",
+      "title": "modal keyboard interaction and semantics are incomplete",
+      "report": "03-FRONTEND.md"
+    },
+    {
+      "id": "UI-06",
+      "severity": "Medium",
+      "uiPriority": "P1",
+      "title": "theme drift causes failed contrast and inconsistent components",
+      "report": "03-FRONTEND.md"
+    },
+    {
+      "id": "UI-07",
+      "severity": "Medium",
+      "uiPriority": "P1",
+      "title": "the narrow header clips login and theme controls",
+      "report": "03-FRONTEND.md"
+    },
+    {
+      "id": "UI-08",
+      "severity": "Medium",
+      "uiPriority": "P1",
+      "title": "quick actions and guest visibility are incomplete",
+      "report": "03-FRONTEND.md"
+    },
+    {
+      "id": "UI-09",
+      "severity": "Medium",
+      "uiPriority": "P1",
+      "title": "dashboards display fabricated or incompatible metrics",
+      "report": "03-FRONTEND.md"
+    },
+    {
+      "id": "UI-10",
+      "severity": "Medium",
+      "uiPriority": "P2",
+      "title": "client requests and rendering have avoidable performance/error debt",
+      "report": "03-FRONTEND.md"
+    },
+    {
+      "id": "UI-11",
+      "severity": "Low",
+      "uiPriority": "P2",
+      "title": "animation and maintenance scaffolding need consolidation",
+      "report": "03-FRONTEND.md"
+    },
+    {
+      "id": "OPS-01",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "committed infrastructure versions are past their support windows",
+      "report": "04-DEPLOYMENT-AND-DEPENDENCIES.md"
+    },
+    {
+      "id": "OPS-02",
+      "severity": "Medium",
+      "uiPriority": null,
+      "title": "Docker builds discard the dependency lockfiles",
+      "report": "04-DEPLOYMENT-AND-DEPENDENCIES.md"
+    },
+    {
+      "id": "OPS-03",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "startup ordering does not wait for dependency readiness",
+      "report": "04-DEPLOYMENT-AND-DEPENDENCIES.md"
+    },
+    {
+      "id": "OPS-04",
+      "severity": "Medium",
+      "uiPriority": null,
+      "title": "environment overrides use the wrong naming convention",
+      "report": "04-DEPLOYMENT-AND-DEPENDENCIES.md"
+    },
+    {
+      "id": "OPS-05",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "the supplied deployment has single points of failure and no recovery procedure",
+      "report": "04-DEPLOYMENT-AND-DEPENDENCIES.md"
+    },
+    {
+      "id": "OPS-06",
+      "severity": "Medium",
+      "uiPriority": null,
+      "title": "health and observability do not describe actual service readiness",
+      "report": "04-DEPLOYMENT-AND-DEPENDENCIES.md"
+    },
+    {
+      "id": "OPS-07",
+      "severity": "Medium",
+      "uiPriority": null,
+      "title": "release hardening and browser hosting are unspecified",
+      "report": "04-DEPLOYMENT-AND-DEPENDENCIES.md"
+    },
+    {
+      "id": "OPS-08",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "locked Kafka connector metadata references a vulnerable Java client",
+      "report": "04-DEPLOYMENT-AND-DEPENDENCIES.md"
+    },
+    {
+      "id": "QA-01",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "no repeatable release-quality test/CI gate exists",
+      "report": "05-CLIENTS-TESTS-AND-DOCUMENTATION.md"
+    },
+    {
+      "id": "QA-02",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "API scripts can report success while operations fail",
+      "report": "05-CLIENTS-TESTS-AND-DOCUMENTATION.md"
+    },
+    {
+      "id": "QA-03",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "Bash request helpers execute caller input as shell code",
+      "report": "05-CLIENTS-TESTS-AND-DOCUMENTATION.md"
+    },
+    {
+      "id": "QA-04",
+      "severity": "High",
+      "uiPriority": null,
+      "title": "CLI authentication has incompatible and false-success behavior",
+      "report": "05-CLIENTS-TESTS-AND-DOCUMENTATION.md"
+    },
+    {
+      "id": "QA-05",
+      "severity": "Medium",
+      "uiPriority": null,
+      "title": "ticket/transport CLI flows violate their contracts or are placeholders",
+      "report": "05-CLIENTS-TESTS-AND-DOCUMENTATION.md"
+    },
+    {
+      "id": "QA-06",
+      "severity": "Medium",
+      "uiPriority": null,
+      "title": "scripts assume inconsistent shell tools and successful HTTP transport",
+      "report": "05-CLIENTS-TESTS-AND-DOCUMENTATION.md"
+    },
+    {
+      "id": "QA-07",
+      "severity": "Medium",
+      "uiPriority": null,
+      "title": "setup and operational documentation references missing files and wrong behavior",
+      "report": "05-CLIENTS-TESTS-AND-DOCUMENTATION.md"
+    },
+    {
+      "id": "QA-08",
+      "severity": "Medium",
+      "uiPriority": null,
+      "title": "initialization/debug helpers generate inconsistent or sensitive test state",
+      "report": "05-CLIENTS-TESTS-AND-DOCUMENTATION.md"
+    },
+    {
+      "id": "QA-09",
+      "severity": "Low",
+      "uiPriority": null,
+      "title": "legacy source and repository policy gaps add maintenance noise",
+      "report": "05-CLIENTS-TESTS-AND-DOCUMENTATION.md"
+    }
+  ]
+}
